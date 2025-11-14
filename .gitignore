@@ -1,0 +1,39 @@
+# Terraform state & working directory
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Sensitive variable files (keep example/template files)
+*.tfvars
+*.tfvars.json
+!terraform-example.tfvars
+
+# Local crash & debug logs
+crash.log
+crash.*.log
+
+# Plan files
+*.tfplan
+
+# Override files (user-specific adjustments)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Provider plugin caches (if any outside .terraform)
+terraform.rc
+.terraformrc
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+
+# Azure auth temp artifacts (if generated)
+azureProfile.json
+azurermProviderProfile.json
+
+# Do NOT ignore the lock file; it's useful for deterministic builds
+# .terraform.lock.hcl  <-- intentionally tracked
