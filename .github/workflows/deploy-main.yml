@@ -5,7 +5,6 @@
 
 # jobs:
 #   validate:
-#     if: github.event.pull_request.merged == true
 #     uses: ./.github/templates/terraform-validate.yml
 #     with:
 #       environment: lv
