@@ -18,7 +18,7 @@ data "azurerm_client_config" "current" {}
 # - LV:  lv-customer-config.yml
 locals {
   env = yamldecode(
-    file("${path.root}/environments/${var.environment_name}.yml")  # Default to LAB, pipeline replaces this
+    file("${path.root}/environments/${var.environment_name}.yml")  
   )
 }
 
@@ -58,4 +58,3 @@ module "storage-account" {
   default_to_oauth_authentication = true
 }
 
-# --------------------------
