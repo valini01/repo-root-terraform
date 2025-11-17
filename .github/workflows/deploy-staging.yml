@@ -8,21 +8,21 @@ on:
 jobs:
   validate:
     if: github.event.pull_request.merged == true
-    uses: ./.github/workflows/templates/terraform-validate.yml
+    uses: ./.github/templates/terraform-validate.yml
     with:
       environment: nlv
     secrets: inherit
 
   plan:
     needs: validate
-    uses: ./.github/workflows/templates/terraform-plan.yml
+    uses: ./.github/templates/terraform-plan.yml
     with:
       environment: nlv
     secrets: inherit
 
   apply:
     needs: plan
-    uses: ./.github/workflows/templates/terraform-apply.yml
+    uses: ./.github/templates/terraform-apply.yml
     with:
       environment: nlv
     secrets: inherit
