@@ -1,138 +1,46 @@
-name: "🧪 Deploy Feature Branch (LAB Environment)"
+name: "🧪 Deploy LAB for Feature Branch"
 
 on:
   push:
     branches:
-      - 'feature/**'  # Only feature branches
-  pull_request:
-    branches:
-      - 'feature/**'
+      - "feature/**"
 
 jobs:
-  # 🚦 STEP 1: Validate the Terraform code
-  terraform-validate:
-    name: "✅ Terraform Validate (LAB)"
-    uses: ./.github/templates/terraform-validate.yml@main
+  validate:
+    uses: ./.github/workflows/templates/terraform-validate.yml
     with:
       environment: lab
-    secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    secrets: inherit
 
-  # 📋 STEP 2: Plan the deployment
-  terraform-plan:
-    name: "📋 Terraform Plan (LAB)"
-    needs: terraform-validate
-    uses: ./.github/templates/terraform-plan.yml@main
+  plan:
+    needs: validate
+    uses: ./.github/workflows/templates/terraform-plan.yml
     with:
       environment: lab
-    secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    secrets: inherit
 
-  # 🚀 STEP 3: Apply the deployment (only on push, not PR)
-  terraform-apply:
-    name: "🚀 Terraform Apply (LAB)"
-    needs: terraform-plan
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
-    uses: ./.github/templates/terraform-apply.yml@main
+  apply:
+    needs: plan
+    uses: ./.github/workflows/templates/terraform-apply.yml
     with:
       environment: lab
-    secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    secrets: inherit
 
-  # 🤖 STEP 4: Auto-create PR to staging
   create-staging-pr:
-    name: "🤖 Auto-Create PR to Staging"
-    needs: terraform-apply
-    if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
+    name: "Auto PR → Staging"
+    needs: apply
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GH_PAT }}
-        fetch-depth: 0
-    
-    - name: Check and Create Staging Branch
-      run: |
-        TARGET_BRANCH="staging"
-        TARGET_BRANCH=${TARGET_BRANCH:-staging}
-        echo "Using target branch: $TARGET_BRANCH"
-        
-        # Set environment variable for consistent usage
-        export TARGET_BRANCH="$TARGET_BRANCH"
-        echo "TARGET_BRANCH=$TARGET_BRANCH" >> $GITHUB_ENV
-        
-        # Check if staging branch exists
-        if git ls-remote --heads origin $TARGET_BRANCH | grep -q $TARGET_BRANCH; then
-          echo "Branch '$TARGET_BRANCH' already exists"
-        else
-          echo "Creating branch '$TARGET_BRANCH' from main"
-          git checkout main
-          git checkout -b $TARGET_BRANCH
-          git push origin $TARGET_BRANCH
-          echo "Branch '$TARGET_BRANCH' created successfully"
-        fi
-    
-    - name: Create Pull Request to Staging
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.GH_PAT }}
-        base: ${{ env.TARGET_BRANCH }}  # 🎯 Target: staging branch (dynamic)
-        head: ${{ github.ref_name }}  # 🌿 Source: current feature branch
-        title: "Auto PR: Deploy ${{ github.ref_name }} to ${{ env.TARGET_BRANCH }}"
-        body: |
-          ## 🚀 Automatic Deployment PR
-          
-          **Source Branch:** `${{ github.ref_name }}`
-          **Target Branch:** `${{ env.TARGET_BRANCH }}`
-          **Target Environment:** Non-Live (NLV)
-          
-          ### ✅ LAB Deployment Status
-          - [x] Terraform validate passed ✅
-          - [x] Terraform plan successful ✅
-          - [x] LAB deployment completed ✅
-          - [x] All tests passed in LAB environment ✅
-          
-          ### 📋 Next Steps
-          - [ ] Team lead review and approval ⏳
-          - [ ] Merge to ${{ env.TARGET_BRANCH }} branch ⏳
-          - [ ] NLV deployment with approval gate ⏳
-          
-          ### 🔍 Changes Summary
-          - Infrastructure changes deployed to LAB
-          - Ready for staging environment deployment
-          - All validations passed
-          
-          ### 🏗️ Infrastructure Resources
-          - Resource Group: `rg-lab-demo` → `rg-non-live-demo`
-          - Storage Account: `labsa001` → `nonlivesa003`
-          - Key Vault: `lab-kv-testing` → `nonlive-kv-testing`
-          
-          **🤖 Auto-generated PR from successful LAB deployment**
-          
-          **Commit SHA:** `${{ github.sha }}`
-          **Triggered by:** @${{ github.actor }}
-        draft: false
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
 
-  # 🗑️ MANUAL STEP: Destroy infrastructure (only manual trigger)
-  terraform-destroy:
-    name: "💥 Terraform Destroy (LAB) - Manual Only"
-    if: github.event_name == 'workflow_dispatch'
-    uses: ./.github/templates/terraform-destroy.yml@main
-    with:
-      environment: lab
-    secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      - name: Create PR to staging
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GH_PAT }}
+          base: staging
+          head: ${{ github.ref_name }}
+          title: "Promote ${{ github.ref_name }} → staging"
+          body: "LAB deployment completed. Requesting promotion to **Staging**."

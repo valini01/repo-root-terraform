@@ -1,183 +1,28 @@
-name: "🏭 Deploy Main Branch (LV Production Environment)"
+name: "🏭 Deploy Production (Live LV)"
 
 on:
   pull_request:
-    branches:
-      - main
-    types: [closed]  # Only when PR is merged
+    types: [closed]
+    branches: [main]
 
 jobs:
-  # 🚦 STEP 1: Validate for Production environment
-  terraform-validate:
-    name: "✅ Terraform Validate (PRODUCTION)"
-    uses: ./.github/templates/terraform-validate.yml
+  validate:
+    if: github.event.pull_request.merged == true
+    uses: ./.github/workflows/templates/terraform-validate.yml
     with:
       environment: lv
-    secrets:
-      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    secrets: inherit
 
-  # 📋 STEP 2: Plan for Production environment
-  terraform-plan:
-    name: "📋 Terraform Plan (LV)"
-    needs: terraform-validate
-    uses: ./.github/templates/terraform-plan.yml@main
+  plan:
+    needs: validate
+    uses: ./.github/workflows/templates/terraform-plan.yml
     with:
       environment: lv
-    secrets:
-      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    secrets: inherit
 
-  # 🔒🔒 STEP 3: Apply with MULTIPLE APPROVAL GATES
-  terraform-apply:
-    name: "🏭 Terraform Apply (PRODUCTION) - MULTIPLE APPROVALS REQUIRED 🔒🔒"
-    needs: terraform-plan
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    uses: ./.github/templates/terraform-apply.yml
+  apply:
+    needs: plan
+    uses: ./.github/workflows/templates/terraform-apply.yml
     with:
       environment: lv
-    secrets:
-      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-
-  # 🎉 STEP 4: Production deployment complete notification
-  production-deployment-complete:
-    name: "🎉 Production Deployment Complete"
-    needs: terraform-apply
-    if: success()
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Get deployment details
-      id: details
-      run: |
-        echo "timestamp=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
-        echo "environment=Live (LV) - Production" >> $GITHUB_OUTPUT
-    
-    - name: Notify deployment success
-      run: |
-        echo "🎉🎉🎉 PRODUCTION DEPLOYMENT COMPLETED SUCCESSFULLY! 🎉🎉🎉"
-        echo ""
-        echo "📊 Deployment Summary:"
-        echo "  🏭 Environment: ${{ steps.details.outputs.environment }}"
-        echo "  🌿 Branch: main"
-        echo "  📝 Commit: ${{ github.sha }}"
-        echo "  👤 Deployed by: ${{ github.actor }}"
-        echo "  ⏰ Completed at: ${{ steps.details.outputs.timestamp }}"
-        echo ""
-        echo "🏗️ Infrastructure Resources:"
-        echo "  📦 Resource Group: rg-live-demo"
-        echo "  💾 Storage Account: livesa002"
-        echo "  🔐 Key Vault: live-kv-testing"
-        echo ""
-        echo "✅ All systems are live in production!"
-    
-    - name: Create deployment success issue
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const deploymentSummary = `## 🎉 Production Deployment Successful
-          
-          **Environment:** Live (LV) - Production  
-          **Branch:** main  
-          **Commit:** ${{ github.sha }}  
-          **Deployed by:** @${{ github.actor }}  
-          **Completed:** ${{ steps.details.outputs.timestamp }}
-          
-          ### 🏗️ Infrastructure Deployed
-          - **Resource Group:** \`rg-live-demo\`
-          - **Storage Account:** \`livesa002\`
-          - **Key Vault:** \`live-kv-testing\`
-          
-          ### ✅ Deployment Journey
-          1. [x] Feature development and LAB testing
-          2. [x] Staging deployment and validation
-          3. [x] Production approval and deployment
-          4. [x] **PRODUCTION LIVE** 🚀
-          
-          All systems operational in production environment.
-          `;
-          
-          github.rest.issues.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: `🎉 Production Deployment Complete - ${new Date().toISOString().split('T')[0]}`,
-            body: deploymentSummary,
-            labels: ['deployment', 'production', 'success']
-          });
-
-  # 📊 STEP 5: Generate deployment report
-  generate-deployment-report:
-    name: "📊 Generate Deployment Report"
-    needs: production-deployment-complete
-    if: success()
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Generate deployment report
-      run: |
-        cat << EOF > deployment-report.md
-        # 📊 Production Deployment Report
-        
-        **Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-        **Environment:** Live (LV) - Production
-        **Repository:** ${{ github.repository }}
-        **Branch:** main
-        **Commit SHA:** ${{ github.sha }}
-        **Deployed by:** ${{ github.actor }}
-        **Workflow Run:** ${{ github.run_id }}
-        
-        ## 🏗️ Infrastructure Deployed
-        - Resource Group: \`rg-live-demo\`
-        - Storage Account: \`livesa002\` 
-        - Key Vault: \`live-kv-testing\`
-        - Location: East US
-        
-        ## 🚀 Deployment Pipeline
-        1. ✅ Feature branch development
-        2. ✅ LAB environment testing
-        3. ✅ Auto-promotion to staging
-        4. ✅ NLV environment validation
-        5. ✅ Auto-promotion to main
-        6. ✅ Production deployment with approvals
-        
-        ## 🔒 Security & Compliance
-        - [x] Multi-stage approval process
-        - [x] Environment-specific configurations
-        - [x] Infrastructure as Code
-        - [x] Full audit trail
-        - [x] Automated testing
-        
-        **Status: PRODUCTION LIVE** 🟢
-        EOF
-        
-        cat deployment-report.md
-    
-    - name: Upload deployment report
-      uses: actions/upload-artifact@v4
-      with:
-        name: production-deployment-report-${{ github.run_id }}
-        path: deployment-report.md
-        retention-days: 30
-
-  # 💥 MANUAL STEP: Destroy infrastructure (only manual trigger with extra protection)
-  terraform-destroy:
-    name: "💥 Terraform Destroy (PRODUCTION) - MANUAL ONLY ⚠️"
-    if: github.event_name == 'workflow_dispatch'
-    uses: ./.github/templates/terraform-destroy.yml
-    with:
-      environment: lv
-    secrets:
-      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    secrets: inherit
