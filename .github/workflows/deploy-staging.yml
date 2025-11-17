@@ -1,44 +1,44 @@
-name: "🔄 Deploy Staging (NLV Environment)"
+# name: "🔄 Deploy Staging (NLV Environment)"
 
-on:
-  workflow_dispatch: 
+# on:
+#   workflow_dispatch: 
 
-jobs:
-  validate:
-    if: github.event.pull_request.merged == true
-    uses: ./.github/templates/terraform-validate.yml
-    with:
-      environment: nlv
-    secrets: inherit
+# jobs:
+#   validate:
+#     if: github.event.pull_request.merged == true
+#     uses: ./.github/templates/terraform-validate.yml
+#     with:
+#       environment: nlv
+#     secrets: inherit
 
-  plan:
-    needs: validate
-    uses: ./.github/templates/terraform-plan.yml
-    with:
-      environment: nlv
-    secrets: inherit
+#   plan:
+#     needs: validate
+#     uses: ./.github/templates/terraform-plan.yml
+#     with:
+#       environment: nlv
+#     secrets: inherit
 
-  apply:
-    needs: plan
-    uses: ./.github/templates/terraform-apply.yml
-    with:
-      environment: nlv
-    secrets: inherit
+#   apply:
+#     needs: plan
+#     uses: ./.github/templates/terraform-apply.yml
+#     with:
+#       environment: nlv
+#     secrets: inherit
 
-  create-main-pr:
-    needs: apply
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
+#   create-main-pr:
+#     needs: apply
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+#           token: ${{ secrets.GH_PAT }}
 
-      - name: Create PR to main
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GH_PAT }}
-          base: main
-          head: staging
-          title: "Promote staging → main (Production)"
-          body: "NLV deployment completed. Requesting promotion to **Production**."
+#       - name: Create PR to main
+#         uses: peter-evans/create-pull-request@v6
+#         with:
+#           token: ${{ secrets.GH_PAT }}
+#           base: main
+#           head: staging
+#           title: "Promote staging → main (Production)"
+#           body: "NLV deployment completed. Requesting promotion to **Production**."
