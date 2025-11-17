@@ -14,7 +14,7 @@ Your multi-environment Terraform pipeline is now complete with the following arc
 
 ## 🔧 Required GitHub Secrets
 
-Add these secrets to your GitHub repository (`Settings` → `Secrets and variables` → `Actions`):
+Add these secrets to your GitHub repositoryy (`Settings` → `Secrets and variables` → `Actions`):
 
 ```yaml
 # Azure Service Principal Credentials
