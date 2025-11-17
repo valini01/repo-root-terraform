@@ -7,21 +7,21 @@ on:
 
 jobs:
   validate:
-    uses: ./.github/workflows/terraform-validate.yml
+    uses: ./.github/templates/workflows/terraform-validate.yml
     with:
       environment: lab
     secrets: inherit
 
   plan:
     needs: validate
-    uses: ./.github/workflows/terraform-plan.yml
+    uses: ./.github/templates/workflows/terraform-plan.yml
     with:
       environment: lab
     secrets: inherit
 
   apply:
     needs: plan
-    uses: ./.github/workflows/terraform-apply.yml
+    uses: ./.github/templates/workflows/terraform-apply.yml
     with:
       environment: lab
     secrets: inherit
