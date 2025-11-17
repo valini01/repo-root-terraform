@@ -3,14 +3,10 @@ name: "🔄 Deploy Staging Branch (NLV Environment)"
 on:
   push:
     branches:
-      - staging  # Triggers when PR is merged to staging
+      - staging  # Only staging branch
   pull_request:
     branches:
       - staging
-    types: [opened, synchronize, reopened]
-
-env:
-  ENVIRONMENT: nlv
 
 jobs:
   # 🚦 STEP 1: Validate for NLV environment
@@ -18,12 +14,12 @@ jobs:
     name: "✅ Terraform Validate (NLV)"
     uses: ./.github/templates/terraform-validate.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: nlv
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   # 📋 STEP 2: Plan for NLV environment
   terraform-plan:
@@ -31,26 +27,26 @@ jobs:
     needs: terraform-validate
     uses: ./.github/templates/terraform-plan.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: nlv
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
-  # 🔒 STEP 3: Apply with APPROVAL GATE (this will pause for approval!)
+  # 🔒 STEP 3: Apply with APPROVAL GATE
   terraform-apply:
     name: "🚀 Terraform Apply (NLV) - Requires Approval 🔒"
     needs: terraform-plan
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     uses: ./.github/templates/terraform-apply.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}  # This creates "nlv-apply" environment with approval gate
+      environment: nlv
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   # 🤖 STEP 4: Auto-create PR to main (production)
   create-main-pr:
@@ -165,15 +161,15 @@ jobs:
           echo "⚠️ Could not determine source feature branch name"
         fi
 
-  # 💥 MANUAL STEP: Destroy infrastructure (only manual trigger)
+  # 💥 MANUAL STEP: Destroy infrastructure
   terraform-destroy:
     name: "💥 Terraform Destroy (NLV) - Manual Only"
     if: github.event_name == 'workflow_dispatch'
     uses: ./.github/templates/terraform-destroy.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: nlv
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}

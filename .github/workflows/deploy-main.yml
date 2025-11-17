@@ -3,14 +3,10 @@ name: "🏭 Deploy Main Branch (LV Production Environment)"
 on:
   push:
     branches:
-      - main  # Triggers when PR is merged to main
+      - main  # Only main branch
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened]
-
-env:
-  ENVIRONMENT: lv
 
 jobs:
   # 🚦 STEP 1: Validate for Production environment
@@ -18,7 +14,7 @@ jobs:
     name: "✅ Terraform Validate (PRODUCTION)"
     uses: ./.github/templates/terraform-validate.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: lv
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -31,21 +27,21 @@ jobs:
     needs: terraform-validate
     uses: ./.github/templates/terraform-plan.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: lv
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
-  # 🔒🔒 STEP 3: Apply with MULTIPLE APPROVAL GATES (production-level security!)
+  # 🔒🔒 STEP 3: Apply with MULTIPLE APPROVAL GATES
   terraform-apply:
     name: "🏭 Terraform Apply (PRODUCTION) - MULTIPLE APPROVALS REQUIRED 🔒🔒"
     needs: terraform-plan
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/templates/terraform-apply.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}  # This creates "lv-apply" environment with strict approval gates
+      environment: lv
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -181,7 +177,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     uses: ./.github/templates/terraform-destroy.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}  # This creates "lv-destroy" with MULTIPLE approval gates
+      environment: lv
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}

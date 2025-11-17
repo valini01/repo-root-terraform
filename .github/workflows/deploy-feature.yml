@@ -3,28 +3,23 @@ name: "🧪 Deploy Feature Branch (LAB Environment)"
 on:
   push:
     branches:
-      - 'feature/**'  # Triggers on any feature branch
-      - 'users/**'    # Also triggers on user branches
+      - 'feature/**'  # Only feature branches
   pull_request:
     branches:
       - 'feature/**'
-      - 'users/**'
-
-env:
-  ENVIRONMENT: lab
 
 jobs:
   # 🚦 STEP 1: Validate the Terraform code
   terraform-validate:
-    name: "Terraform Validate (LAB)"
+    name: "✅ Terraform Validate (LAB)"
     uses: ./.github/templates/terraform-validate.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: lab
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   # 📋 STEP 2: Plan the deployment
   terraform-plan:
@@ -32,32 +27,32 @@ jobs:
     needs: terraform-validate
     uses: ./.github/templates/terraform-plan.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: lab
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   # 🚀 STEP 3: Apply the deployment (only on push, not PR)
   terraform-apply:
     name: "🚀 Terraform Apply (LAB)"
     needs: terraform-plan
-    if: github.event_name == 'push' && github.ref_type == 'branch' && contains(github.ref, 'feature/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
     uses: ./.github/templates/terraform-apply.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: lab
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
-  # 🤖 STEP 4: Auto-create PR to staging (magic happens here!)
+  # 🤖 STEP 4: Auto-create PR to staging
   create-staging-pr:
-    name: "Auto-Create PR to Staging"
+    name: "🤖 Auto-Create PR to Staging"
     needs: terraform-apply
-    if: success() && github.event_name == 'push'
+    if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
     runs-on: ubuntu-latest
     
     steps:
@@ -131,13 +126,13 @@ jobs:
 
   # 🗑️ MANUAL STEP: Destroy infrastructure (only manual trigger)
   terraform-destroy:
-    name: "Terraform Destroy (LAB) - Manual Only"
-    if: github.event_name == 'workflow_dispatch'  # Only manual trigger
+    name: "💥 Terraform Destroy (LAB) - Manual Only"
+    if: github.event_name == 'workflow_dispatch'
     uses: ./.github/templates/terraform-destroy.yml
     with:
-      environment: ${{ env.ENVIRONMENT }}
+      environment: lab
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
