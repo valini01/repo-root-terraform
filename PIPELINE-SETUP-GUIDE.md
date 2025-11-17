@@ -17,7 +17,7 @@ This document provides step-by-step instructions for setting up and using the au
 Create a service principal with sufficient permissions:
 
 ```bash
-# Create service principall
+# Create service principal
 az ad sp create-for-rbac --name "terraform-pipeline" --role "Contributor" --scopes "/subscriptions/YOUR_SUBSCRIPTION_ID"
 ```
 
