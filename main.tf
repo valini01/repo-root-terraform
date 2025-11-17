@@ -32,7 +32,7 @@ module "resource-group" {
 }
 
 # --------------------------
-# Key Vault (conditional)
+# Key Vault (conditionall)
 # --------------------------
 module "key-vault" {
   source              = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
