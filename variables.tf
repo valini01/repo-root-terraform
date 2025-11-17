@@ -13,13 +13,3 @@ variable "environment_name" {
   description = "Environment key to select config (lab | nlv | lv)"
   type        = string
 }
-
-variable "subscriptionId" {
-  description = "Azure Subscription ID"
-  type        = string
-}
-
-variable "tenantId" {
-  description = "Azure Tenant ID"
-  type        = string
-}
