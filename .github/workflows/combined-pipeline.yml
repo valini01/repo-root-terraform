@@ -38,7 +38,7 @@ jobs:
     if: inputs.action == 'validate' || inputs.action == 'plan' || inputs.action == 'apply'
     uses: ./.github/templates/terraform-validate.yml
     with:
-      environment: ${{ env.SELECTED_ENVIRONMENT }}
+      environment: ${{ github.event.inputs.environment }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -52,7 +52,7 @@ jobs:
     needs: terraform-validate
     uses: ./.github/templates/terraform-plan.yml
     with:
-      environment: ${{ env.SELECTED_ENVIRONMENT }}
+      environment: ${{ github.event.inputs.environment }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -66,7 +66,7 @@ jobs:
     needs: terraform-plan
     uses: ./.github/templates/terraform-apply.yml
     with:
-      environment: ${{ env.SELECTED_ENVIRONMENT }}
+      environment: ${{ github.event.inputs.environment }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -79,7 +79,7 @@ jobs:
     if: inputs.action == 'destroy'
     uses: ./.github/templates/terraform-destroy.yml
     with:
-      environment: ${{ env.SELECTED_ENVIRONMENT }}
+      environment: ${{ github.event.inputs.environment }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -104,7 +104,7 @@ jobs:
           const logEntry = `## 📊 Manual Deployment Log
           
           **Action:** ${status}
-          **Environment:** ${{ env.SELECTED_ENVIRONMENT }}
+          **Environment:** ${{ github.event.inputs.environment }}
           **Performed by:** @${{ github.actor }}
           **Reason:** ${{ github.event.inputs.reason }}
           **Timestamp:** ${new Date().toISOString()}
@@ -114,8 +114,8 @@ jobs:
           - **Repository:** ${{ github.repository }}
           - **Branch:** ${{ github.ref_name }}
           - **Commit:** ${{ github.sha }}
-          - **Action:** ${{ env.SELECTED_ACTION }}
-          - **Environment:** ${{ env.SELECTED_ENVIRONMENT }}
+          - **Action:** ${{ github.event.inputs.action }}
+          - **Environment:** ${{ github.event.inputs.environment }}
           
           **Manual deployment completed via Combined Pipeline.**
           `;
@@ -123,7 +123,7 @@ jobs:
           github.rest.issues.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: `📊 Manual ${status} - ${{ env.SELECTED_ENVIRONMENT }} - ${new Date().toISOString().split('T')[0]}`,
+            title: `📊 Manual ${status} - ${{ github.event.inputs.environment }} - ${new Date().toISOString().split('T')[0]}`,
             body: logEntry,
-            labels: ['manual-deployment', '${{ env.SELECTED_ENVIRONMENT }}', '${{ env.SELECTED_ACTION }}']
+            labels: ['manual-deployment', '${{ github.event.inputs.environment }}', '${{ github.event.inputs.action }}']
           });

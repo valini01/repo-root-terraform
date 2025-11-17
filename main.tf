@@ -26,7 +26,7 @@ locals {
 # Resource Group
 # --------------------------
 module "resource-group" {
-  source   = "../repo-modules-env/modules/terraform-azurerm-avm-res-resources-resourcegroup-main"
+  source   = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-resources-resourcegroup-main?ref=main"
   name     = local.env.resources.resource_group.name
   location = local.env.location
 }
@@ -35,7 +35,7 @@ module "resource-group" {
 # Key Vault (conditional)
 # --------------------------
 module "key-vault" {
-  source              = "../repo-modules-env/modules/terraform-azurerm-avm-res-keyvault-vault-main"
+  source              = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
   count               = local.env.resources.key_vault.enabled ? 1 : 0
 
   name                = local.env.resources.key_vault.name
@@ -48,7 +48,7 @@ module "key-vault" {
 # Storage Account (conditional)
 # --------------------------
 module "storage-account" {
-  source              = "../repo-modules-env/modules/terraform-azurerm-avm-res-storage-storageaccount-main"
+  source              = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
   count               = local.env.resources.storage_account.enabled ? 1 : 0
 
   name                           = local.env.resources.storage_account.name
