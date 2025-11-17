@@ -1,21 +1,12 @@
 provider "azurerm" {
-  subscription_id = "104ad005-3dec-497b-88a0-cd0ead048652"
   features {}
-  # Enable Azure AD (Entra ID) authentication for storage data plane operations
-  # (Supported in recent azurerm provider versions). Falls back to key auth if unsupported.
-  # Use managed identity instead of service principal secrets if running in an environment
-  # where MSI is available (e.g., Azure VM, Cloud Shell). On local Windows this will be ignored.
   storage_use_azuread = true
-  
+
 }
 
 data "azurerm_client_config" "current" {}
 
-# 🎯 Dynamic Environment Configuration Loading
-# This gets automatically replaced by the pipeline templates:
-# - LAB: lab-customer-config.yml
-# - NLV: nlv-customer-config.yml  
-# - LV:  lv-customer-config.yml
+
 locals {
   env = yamldecode(
     file("${path.root}/environments/${var.environment_name}.yml")  

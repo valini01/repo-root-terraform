@@ -12,6 +12,5 @@ variable "storage_account_name" {
 variable "environment_name" {
   description = "Environment key to select config (lab | nlv | lv)"
   type        = string
-  default     = "lab"
 }
 
