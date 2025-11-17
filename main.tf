@@ -18,7 +18,7 @@ data "azurerm_client_config" "current" {}
 # - LV:  lv-customer-config.yml
 locals {
   env = yamldecode(
-    file("${path.root}/environments/lab-customer-config.yml")  # Default to LAB, pipeline replaces this
+    file("${path.root}/environments/lab.yml")")  # Default to LAB, pipeline replaces this
   )
 }
 

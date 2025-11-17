@@ -37,8 +37,23 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
 
+      - name: Replace Environment Configuration
+        run: |
+          # Map environment input to correct YAML file
+          if [ "${{ inputs.environment }}" = "lab" ]; then
+            ENV_FILE="lab.yml"
+          elif [ "${{ inputs.environment }}" = "nlv" ]; then
+            ENV_FILE="nlv.yml"
+          elif [ "${{ inputs.environment }}" = "lv" ]; then
+            ENV_FILE="lv.yml"
+          else
+            ENV_FILE="lab.yml"  # Default fallback
+          fi
+          echo "Using environment file: $ENV_FILE"
+          sed -i "s|environments/lab.yml|environments/$ENV_FILE|g" main.tf
+
       - name: Terraform Init
         run: terraform init
 
       - name: Terraform Plan
-        run: terraform plan -var-file="environments/${{ inputs.environment }}.yml"
+        run: terraform plan
