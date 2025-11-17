@@ -1,0 +1,179 @@
+name: "🔄 Deploy Staging Branch (NLV Environment)"
+
+on:
+  push:
+    branches:
+      - staging  # Triggers when PR is merged to staging
+  pull_request:
+    branches:
+      - staging
+    types: [opened, synchronize, reopened]
+
+env:
+  ENVIRONMENT: nlv
+
+jobs:
+  # 🚦 STEP 1: Validate for NLV environment
+  terraform-validate:
+    name: "✅ Terraform Validate (NLV)"
+    uses: ./.github/templates/terraform-validate.yml
+    with:
+      environment: ${{ env.ENVIRONMENT }}
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+  # 📋 STEP 2: Plan for NLV environment
+  terraform-plan:
+    name: "📋 Terraform Plan (NLV)"
+    needs: terraform-validate
+    uses: ./.github/templates/terraform-plan.yml
+    with:
+      environment: ${{ env.ENVIRONMENT }}
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+  # 🔒 STEP 3: Apply with APPROVAL GATE (this will pause for approval!)
+  terraform-apply:
+    name: "🚀 Terraform Apply (NLV) - Requires Approval 🔒"
+    needs: terraform-plan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    uses: ./.github/templates/terraform-apply.yml
+    with:
+      environment: ${{ env.ENVIRONMENT }}  # This creates "nlv-apply" environment with approval gate
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+  # 🤖 STEP 4: Auto-create PR to main (production)
+  create-main-pr:
+    name: "🤖 Auto-Create PR to Main (Production)"
+    needs: terraform-apply
+    if: success() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Get source branch from merge commit
+      id: get-source
+      run: |
+        # Try to extract the original feature branch name from merge commit
+        SOURCE_BRANCH=$(git log --merges --oneline -1 --pretty=format:"%s" | grep -o 'feature/[^[:space:]]*' | head -1 || echo "unknown")
+        echo "source_branch=${SOURCE_BRANCH}" >> $GITHUB_OUTPUT
+        echo "Found source branch: ${SOURCE_BRANCH}"
+    
+    - name: Check and Create Main Branch
+      run: |
+        TARGET_BRANCH="main"
+        TARGET_BRANCH=${TARGET_BRANCH:-main}
+        echo "Using target branch: $TARGET_BRANCH"
+        
+        # Set environment variable for consistent usage
+        export TARGET_BRANCH="$TARGET_BRANCH"
+        echo "TARGET_BRANCH=$TARGET_BRANCH" >> $GITHUB_ENV
+        
+        # Check if main branch exists (it should, but let's be safe)
+        if git ls-remote --heads origin $TARGET_BRANCH | grep -q $TARGET_BRANCH; then
+          echo "✅ Branch '$TARGET_BRANCH' already exists"
+        else
+          echo "🌿 Creating branch '$TARGET_BRANCH'"
+          git checkout -b $TARGET_BRANCH
+          git push origin $TARGET_BRANCH
+          echo "✅ Branch '$TARGET_BRANCH' created successfully"
+        fi
+    
+    - name: Create Pull Request to Main
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        base: ${{ env.TARGET_BRANCH }}  # 🎯 Target: main branch (dynamic)
+        head: staging  # 🌿 Source: staging branch
+        title: "🏭 Auto PR: Deploy to Production (${{ env.TARGET_BRANCH }})"
+        body: |
+          ## 🏭 Production Deployment PR
+          
+          **Source Flow:** `${{ steps.get-source.outputs.source_branch }}` → `staging` → `main`
+          **Target Environment:** Live (LV) - **PRODUCTION** 🚨
+          
+          ### ✅ Deployment History
+          - [x] LAB deployment successful ✅
+          - [x] NLV deployment successful ✅  
+          - [x] All approval gates passed ✅
+          - [ ] Ready for PRODUCTION deployment ⏳
+          
+          ### 🔒 Production Safety Checks
+          - [x] Code reviewed in feature branch ✅
+          - [x] LAB environment tested ✅
+          - [x] NLV environment verified ✅
+          - [x] Team lead approval obtained ✅
+          - [ ] **PRODUCTION APPROVAL REQUIRED** 🚨
+          
+          ### 🏗️ Infrastructure Changes
+          - Resource Group: `rg-non-live-demo` → `rg-live-demo`
+          - Storage Account: `nonlivesa003` → `livesa002`
+          - Key Vault: `nonlive-kv-testing` → `live-kv-testing`
+          
+          ### ⚠️ Production Deployment Notes
+          - **Multiple approvals required** for production
+          - **Extended approval gate** with waiting period
+          - **Full audit trail** maintained
+          - **Rollback plan** available if needed
+          
+          **🤖 Auto-generated PR from successful NLV deployment**
+          
+          **Original feature:** `${{ steps.get-source.outputs.source_branch }}`
+          **Commit SHA:** `${{ github.sha }}`
+          **Deployed by:** @${{ github.actor }}
+        draft: false
+
+  # 🗑️ STEP 5: Clean up - Delete the source feature branch
+  delete-feature-branch:
+    name: "🗑️ Delete Feature Branch"
+    needs: create-main-pr
+    if: success()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Get and delete source feature branch
+      run: |
+        # Extract the original feature branch name
+        SOURCE_BRANCH=$(git log --merges --oneline -1 --pretty=format:"%s" | grep -o 'feature/[^[:space:]]*' | head -1 || echo "")
+        
+        if [[ ! -z "$SOURCE_BRANCH" && "$SOURCE_BRANCH" != "unknown" ]]; then
+          echo "🗑️ Deleting feature branch: $SOURCE_BRANCH"
+          git push origin --delete $SOURCE_BRANCH || echo "⚠️ Branch already deleted or doesn't exist"
+          echo "✅ Feature branch $SOURCE_BRANCH has been deleted"
+        else
+          echo "⚠️ Could not determine source feature branch name"
+        fi
+
+  # 💥 MANUAL STEP: Destroy infrastructure (only manual trigger)
+  terraform-destroy:
+    name: "💥 Terraform Destroy (NLV) - Manual Only"
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/templates/terraform-destroy.yml
+    with:
+      environment: ${{ env.ENVIRONMENT }}
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}

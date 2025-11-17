@@ -11,10 +11,14 @@ provider "azurerm" {
 
 data "azurerm_client_config" "current" {}
 
-# Load YAML
+# 🎯 Dynamic Environment Configuration Loading
+# This gets automatically replaced by the pipeline templates:
+# - LAB: lab-customer-config.yml
+# - NLV: nlv-customer-config.yml  
+# - LV:  lv-customer-config.yml
 locals {
   env = yamldecode(
-    file("${path.root}/environments/lab-customer-config.yml")
+    file("${path.root}/environments/lab-customer-config.yml")  # Default to LAB, pipeline replaces this
   )
 }
 

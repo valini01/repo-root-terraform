@@ -1,0 +1,89 @@
+name: Terraform Destroy Template
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to destroy (lab/nlv/lv)'
+        required: true
+        type: string
+      working-directory:
+        description: 'Working directory'
+        required: false
+        type: string
+        default: '.'
+    secrets:
+      AZURE_AD_CLIENT_ID:
+        required: true
+      AZURE_AD_CLIENT_SECRET:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+      AZURE_AD_TENANT_ID:
+        required: true
+
+jobs:
+  terraform-destroy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}-destroy # 🔒 This creates the approval gate!
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.0"
+        
+    - name: Configure Azure credentials
+      uses: azure/login@v1
+      with:
+        creds: |
+          {
+            "clientId": "${{ secrets.AZURE_AD_CLIENT_ID }}",
+            "clientSecret": "${{ secrets.AZURE_AD_CLIENT_SECRET }}",
+            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            "tenantId": "${{ secrets.AZURE_AD_TENANT_ID }}"
+          }
+    
+    - name: Update main.tf for environment
+      run: |
+        sed -i 's/lab-customer-config.yml/${{ inputs.environment }}-customer-config.yml/g' main.tf
+      working-directory: ${{ inputs.working-directory }}
+    
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ${{ inputs.working-directory }}
+    
+    - name: Terraform Plan Destroy
+      run: terraform plan -destroy -no-color
+      working-directory: ${{ inputs.working-directory }}
+      
+    - name: Terraform Destroy
+      run: terraform destroy -auto-approve
+      working-directory: ${{ inputs.working-directory }}
+      
+    - name: Comment destruction success
+      if: success()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const output = `#### Terraform Destroy Successful 💥 \`${{ inputs.environment }}\`
+          
+          🗑️ **Infrastructure destroyed successfully!**
+          
+          - **Environment**: \`${{ inputs.environment }}\`
+          - **Branch**: \`${{ github.ref_name }}\`
+          - **Actor**: @${{ github.actor }}
+          
+          ⚠️ **All resources have been permanently removed.**`;
+          
+          if (context.payload.pull_request) {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+          }
