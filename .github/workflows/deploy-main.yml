@@ -1,0 +1,25 @@
+name: "🏭 Deploy Production (Live LV)"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    uses: ./.github/workflows/terraform-validate.yml
+    with:
+      environment: lv
+    secrets: inherit
+
+  plan:
+    needs: validate
+    uses: ./.github/workflows/terraform-plan.yml
+    with:
+      environment: lv
+    secrets: inherit
+
+  apply:
+    needs: plan
+    uses: ./.github/workflows/terraform-apply.yml
+    with:
+      environment: lv
+    secrets: inherit

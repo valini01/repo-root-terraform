@@ -1,0 +1,46 @@
+name: "🔄 Deploy Staging (NLV Environment)"
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - staging
+
+jobs:
+  validate:
+    uses: ./.github/workflows/terraform-validate.yml
+    with:
+      environment: nlv
+    secrets: inherit
+
+  plan:
+    needs: validate
+    uses: ./.github/workflows/terraform-plan.yml
+    with:
+      environment: nlv
+    secrets: inherit
+
+  apply:
+    needs: plan
+    uses: ./.github/workflows/terraform-apply.yml
+    with:
+      environment: nlv
+    secrets: inherit
+
+  create-main-pr:
+    needs: apply
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Create PR to main
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GH_PAT }}
+          base: main
+          head: staging
+          title: "Promote staging → main (Production)"
+          body: "NLV deployment completed. Requesting promotion to **Production**."
