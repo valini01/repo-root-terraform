@@ -1,9 +1,7 @@
 name: "🔄 Deploy Staging (NLV Environment)"
 
 on:
-  pull_request:
-    types: [closed]
-    branches: [staging]
+  workflow_dispatch: 
 
 jobs:
   validate:
