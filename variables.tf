@@ -14,12 +14,12 @@ variable "environment_name" {
   type        = string
 }
 
-variable "subscription_id" {
+variable "subscriptionId" {
   description = "Azure Subscription ID"
   type        = string
 }
 
-variable "tenant_id" {
+variable "tenantId" {
   description = "Azure Tenant ID"
   type        = string
 }

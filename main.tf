@@ -2,8 +2,8 @@ provider "azurerm" {
   features {}
   storage_use_azuread = true
   resource_provider_registrations = "none"
-  subscription_id                 = var.subscription_id
-  tenant_id                       = var.tenant_id
+  subscription_id                 = var.subscriptionId
+  tenant_id                       = var.tenantId
 }
 
 data "azurerm_client_config" "current" {}
