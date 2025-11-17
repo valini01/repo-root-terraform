@@ -12,7 +12,7 @@ Your multi-environment Terraform pipeline is now complete with the following arc
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🔧 Required GitHub Secrets
+## Required GitHub Secrets
 
 Add these secrets to your GitHub repositoryy (`Settings` → `Secrets and variables` → `Actions`):
 
