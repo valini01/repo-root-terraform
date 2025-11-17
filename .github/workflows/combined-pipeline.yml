@@ -36,55 +36,55 @@ jobs:
   terraform-validate:
     name: "✅ Terraform Validate (${{ github.event.inputs.environment }})"
     if: inputs.action == 'validate' || inputs.action == 'plan' || inputs.action == 'apply'
-    uses: ./.github/templates/terraform-validate.yml
+    uses: ./.github/templates/terraform-validate.yml@main
     with:
       environment: ${{ github.event.inputs.environment }}
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   # 📋 STEP 2: Plan the deployment
   terraform-plan:
     name: "📋 Terraform Plan (${{ github.event.inputs.environment }})"
     if: inputs.action == 'plan' || inputs.action == 'apply'
     needs: terraform-validate
-    uses: ./.github/templates/terraform-plan.yml
+    uses: ./.github/templates/terraform-plan.yml@main
     with:
       environment: ${{ github.event.inputs.environment }}
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   # 🚀 STEP 3: Apply the deployment (with approval gates)
   terraform-apply:
     name: "🚀 Terraform Apply (${{ github.event.inputs.environment }}) - Manual"
     if: inputs.action == 'apply'
     needs: terraform-plan
-    uses: ./.github/templates/terraform-apply.yml
+    uses: ./.github/templates/terraform-apply.yml@main
     with:
       environment: ${{ github.event.inputs.environment }}
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   # 💥 STEP 4: Destroy infrastructure (with approval gates)
   terraform-destroy:
     name: "💥 Terraform Destroy (${{ github.event.inputs.environment }}) - Manual"
     if: inputs.action == 'destroy'
-    uses: ./.github/templates/terraform-destroy.yml
+    uses: ./.github/templates/terraform-destroy.yml@main
     with:
       environment: ${{ github.event.inputs.environment }}
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   # 📊 STEP 5: Log manual deployment
   log-manual-deployment:

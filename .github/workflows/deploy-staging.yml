@@ -1,18 +1,17 @@
 name: "🔄 Deploy Staging Branch (NLV Environment)"
 
 on:
-  push:
-    branches:
-      - staging  # Only staging branch
   pull_request:
     branches:
       - staging
+    types: [closed]  # Only when PR is merged
 
 jobs:
   # 🚦 STEP 1: Validate for NLV environment
   terraform-validate:
     name: "✅ Terraform Validate (NLV)"
-    uses: ./.github/templates/terraform-validate.yml
+    if: github.event.pull_request.merged == true
+    uses: ./.github/templates/terraform-validate.yml@main
     with:
       environment: nlv
     secrets:
@@ -25,7 +24,7 @@ jobs:
   terraform-plan:
     name: "📋 Terraform Plan (NLV)"
     needs: terraform-validate
-    uses: ./.github/templates/terraform-plan.yml
+    uses: ./.github/templates/terraform-plan.yml@main
     with:
       environment: nlv
     secrets:
@@ -38,8 +37,8 @@ jobs:
   terraform-apply:
     name: "🚀 Terraform Apply (NLV) - Requires Approval 🔒"
     needs: terraform-plan
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    uses: ./.github/templates/terraform-apply.yml
+    if: github.event.pull_request.merged == true
+    uses: ./.github/templates/terraform-apply.yml@main
     with:
       environment: nlv
     secrets:
@@ -165,7 +164,7 @@ jobs:
   terraform-destroy:
     name: "💥 Terraform Destroy (NLV) - Manual Only"
     if: github.event_name == 'workflow_dispatch'
-    uses: ./.github/templates/terraform-destroy.yml
+    uses: ./.github/templates/terraform-destroy.yml@main
     with:
       environment: nlv
     secrets:
