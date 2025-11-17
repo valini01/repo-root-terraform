@@ -15,7 +15,9 @@ on:
         required: true
       AZURE_AD_TENANT_ID:
         required: true
-
+      GH_PAT:
+        required: true
+        
 jobs:
   plan:
     runs-on: ubuntu-latest
