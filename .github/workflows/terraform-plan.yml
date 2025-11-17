@@ -17,7 +17,7 @@ on:
         required: true
       GH_PAT:
         required: true
-        
+
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -41,4 +41,4 @@ jobs:
         run: terraform init
 
       - name: Terraform Plan
-        run: terraform plan -var-file="environments/${{ inputs.environment }}.tfvars"
+        run: terraform plan -var-file="environments/${{ inputs.environment }}.yml"
