@@ -47,6 +47,7 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
           ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+        run: terraform plan -input=false -var="environment_name=${{ inputs.environment }}"
        
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false -var="environment_name=${{ inputs.environment }}"
