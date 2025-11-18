@@ -77,10 +77,19 @@ jobs:
       - name: Commit and push README.md
         continue-on-error: ${{ env.FAIL_ON_ERROR == 'false' }}
         run: |
-          git remote set-url origin https://github.com/valini01/repo-root-terraform.git
-          git checkout ${{ steps.source_branch.outputs.branch_name }}
-          git pull origin ${{ steps.source_branch.outputs.branch_name }}
+          # Configure authentication
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/valini01/repo-root-terraform.git
+          
+          # Fetch and checkout the branch properly
+          git fetch origin ${{ steps.source_branch.outputs.branch_name }}
+          git checkout -B ${{ steps.source_branch.outputs.branch_name }} origin/${{ steps.source_branch.outputs.branch_name }}
+          
+          # Add and commit if there are changes
           git add README.md
-          git diff --staged --quiet || git commit -m "README.md (Re)generate by TF Docs"
-          git push origin HEAD:${{ steps.source_branch.outputs.branch_name }}
-          git status  # Added to debug status after push
+          if ! git diff --staged --quiet; then
+            git commit -m "📝 README.md (Re)generate by TF Docs"
+            git push origin ${{ steps.source_branch.outputs.branch_name }}
+            echo "✅ README.md updated and pushed"
+          else
+            echo "ℹ️ No changes to README.md"
+          fi
