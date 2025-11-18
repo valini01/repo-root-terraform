@@ -1,0 +1,86 @@
+name: Terraform Docs Generator
+
+on:
+  workflow_call:
+    inputs:
+      workingDirectory:
+        description: "Working Directory"
+        required: false
+        default: "."
+        type: string
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/${{ inputs.workingDirectory }}
+    env:
+      FAIL_ON_ERROR: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Git identity
+        run: |
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --global user.name "${{ github.actor }}"
+
+      - name: Detect source branch
+        id: source_branch
+        run: |
+          echo "branch_name=${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}" >> $GITHUB_OUTPUT
+
+      - name: Debug - List files
+        run: |
+          echo "PWD = $(pwd)"
+          ls -al
+
+      - name: Determine header and footer
+        id: paths
+        run: |
+          if [[ -f ".tfdocs/header.md" ]]; then echo "header=.tfdocs/header.md" >> $GITHUB_OUTPUT; else echo "header=main.tf" >> $GITHUB_OUTPUT; fi
+          if [[ -f ".tfdocs/footer.md" ]]; then echo "footer=.tfdocs/footer.md" >> $GITHUB_OUTPUT; else echo "footer=variables.tf" >> $GITHUB_OUTPUT; fi
+
+      - name: Generate README.md with terraform-docs
+        continue-on-error: ${{ env.FAIL_ON_ERROR == 'false' }}
+        run: |
+          docker run --rm \
+            -v "$PWD:/data" \
+            -w /data \
+            quay.io/terraform-docs/terraform-docs:latest \
+              markdown table . \
+              --output-file README.md \
+              --footer-from ${{ steps.paths.outputs.footer }} \
+              --header-from ${{ steps.paths.outputs.header }} \
+              --show "footer,header,data-sources,inputs,outputs,providers,requirements,resources" \
+              --output-mode replace
+
+          sed -i 's#\[\[\\_TOC\\_]]#[[_TOC_]]#' README.md
+
+      - name: Print generated README.md for debug
+        run: |
+          echo "======= GENERATED README.md CONTENT ======="
+          cat README.md
+          echo "======= END OF README.md ======="
+
+      - name: Fix ownership of files after terraform-docs
+        run: |
+          echo "🔧 Resetting file ownership to avoid permission issues..."
+          if [ "$(stat -c '%U' README.md)" != "$USER" ]; then
+            sudo chown -R $USER:$USER .
+          fi
+
+      - name: Commit and push README.md
+        continue-on-error: ${{ env.FAIL_ON_ERROR == 'false' }}
+        run: |
+          git remote set-url origin https://github.com/Quality-Framework/qualityframework-demo.git
+          git checkout ${{ steps.source_branch.outputs.branch_name }}
+          git pull origin ${{ steps.source_branch.outputs.branch_name }}
+          git add README.md
+          git diff --staged --quiet || git commit -m "README.md (Re)generate by TF Docs"
+          git push origin HEAD:${{ steps.source_branch.outputs.branch_name }}
+          git status  # Added to debug status after push

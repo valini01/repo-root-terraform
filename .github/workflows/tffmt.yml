@@ -1,0 +1,34 @@
+name: Terraform Format Check
+
+on:
+  workflow_call:
+    inputs:
+      workingDirectory:
+        description: "Working Directory"
+        required: false
+        default: "."
+        type: string
+
+jobs:
+  tf_fmt_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '>= 1.9, < 2.0.0'  # Use a version range
+
+      - name: Initialize Terraform
+        run: terraform init
+        working-directory: ${{ inputs.workingDirectory }}
+
+      - name: Validate Terraform Code
+        run: terraform validate
+        working-directory: ${{ inputs.workingDirectory }}
+
+      - name: Run Terraform Format Check
+        run: terraform fmt -list=true -write=false -diff=true -check=true -recursive
+        working-directory: ${{ inputs.workingDirectory }}

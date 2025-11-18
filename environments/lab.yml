@@ -5,13 +5,13 @@ location: "East US"
 resources:
   resource_group:
     enabled: true
-    name: "rg-lab-demo"
+    name: "rg-lab-demo123"
 
   storage_account:
     enabled: true
-    name: "labsa001"
+    name: "labsa001234"
 
   key_vault:
     enabled: true
-    name: "lab-kv-testing"
+    name: "lab-kv-testing123"
   
