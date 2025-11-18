@@ -8,10 +8,10 @@ resources:
     name: "rg-lab-demo123"
 
   storage_account:
-    enabled: true
+    enabled: false
     name: "labsa001234"
 
   key_vault:
-    enabled: true
+    enabled: false
     name: "lab-kv-testing123"
   

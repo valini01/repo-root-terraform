@@ -21,7 +21,16 @@ jobs:
 
   apply:
     needs: plan
+    environment: lab-apply
     uses: ./.github/workflows/terraform-apply.yml
+    with:
+      environment: lab
+    secrets: inherit
+
+  destroy:
+    needs: apply
+    environment: lab-destroy
+    uses: ./.github/workflows/terraform-destroy.yml
     with:
       environment: lab
     secrets: inherit
@@ -29,6 +38,7 @@ jobs:
   create-staging-pr:
     name: "Auto PR → Staging"
     needs: apply
+    environment: lab-pr
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +51,6 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
           base: staging
-          head: ${{ github.ref_name }}
+          branch: ${{ github.ref_name }} 
           title: "Promote ${{ github.ref_name }} → staging"
           body: "LAB deployment completed. Requesting promotion to **Staging**."

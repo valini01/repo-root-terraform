@@ -6,9 +6,9 @@ resources:
     enabled: true
     name: "rg-non-live-demo"
   storage_account:
-    enabled: true
+    enabled: false
     name: "nonlivesa003"
 
   key_vault:
-    enabled: true
+    enabled: false
     name: "nonlive-kv-testing"
