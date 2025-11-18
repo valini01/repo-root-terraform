@@ -77,7 +77,7 @@ jobs:
       - name: Commit and push README.md
         continue-on-error: ${{ env.FAIL_ON_ERROR == 'false' }}
         run: |
-          git remote set-url origin https://github.com/Quality-Framework/qualityframework-demo.git
+          git remote set-url origin https://github.com/valini01/repo-root-terraform.git
           git checkout ${{ steps.source_branch.outputs.branch_name }}
           git pull origin ${{ steps.source_branch.outputs.branch_name }}
           git add README.md

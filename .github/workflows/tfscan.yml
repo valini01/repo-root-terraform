@@ -8,6 +8,9 @@ on:
         required: false
         default: "."
         type: string
+    secrets:
+      GH_PAT:
+        required: false
 
 jobs:
   terraform-format-check:
@@ -24,6 +27,7 @@ jobs:
     uses: ./.github/workflows/tflint.yml
     with:
       workingDirectory: ${{ inputs.workingDirectory }}
+    secrets: inherit
 
   terraform-docs:
     uses: ./.github/workflows/tfdocs.yml

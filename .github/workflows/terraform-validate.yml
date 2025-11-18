@@ -23,6 +23,7 @@ jobs:
     uses: ./.github/workflows/tfscan.yml
     with:
       workingDirectory: "."
+    secrets: inherit
 
   validate:
     runs-on: ubuntu-latest
