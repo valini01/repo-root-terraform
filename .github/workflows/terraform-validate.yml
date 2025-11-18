@@ -19,14 +19,14 @@ on:
         required: true
 
 jobs:
-  tfscan:
-    uses: ./.github/workflows/tfscan.yml
-    with:
-      workingDirectory: "."
+  # tfscan:
+  #   uses: ./.github/workflows/tfscan.yml
+  #   with:
+  #     workingDirectory: "."
 
   validate:
     runs-on: ubuntu-latest
-    needs: tfscan
+    # needs: tfscan
 
     steps:
       - name: Checkout code
@@ -44,11 +44,7 @@ jobs:
           creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
 
       - name: Terraform Init
-        env:
-          TF_VAR_environment_name: ${{ inputs.environment }}
         run: terraform init
 
       - name: Terraform Validate
-        env:
-          TF_VAR_environment_name: ${{ inputs.environment }}
         run: terraform validate

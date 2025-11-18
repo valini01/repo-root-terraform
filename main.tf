@@ -19,7 +19,7 @@ locals {
 # Resource Group
 # --------------------------
 module "resource-group" {
-  source   = "git::https://github.com/valini01/repo-modules-env?ref=main"
+  source   = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-resources-resourcegroup-main?ref=main"
   name     = local.env.resources.resource_group.name
   location = local.env.location
 }
