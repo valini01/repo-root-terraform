@@ -21,15 +21,12 @@ jobs:
 
   apply:
     needs: plan
-    environment: lab-apply
     uses: ./.github/workflows/terraform-apply.yml
     with:
       environment: lab
     secrets: inherit
 
   destroy:
-    needs: apply
-    environment: lab-destroy
     uses: ./.github/workflows/terraform-destroy.yml
     with:
       environment: lab
@@ -38,7 +35,6 @@ jobs:
   create-staging-pr:
     name: "Auto PR → Staging"
     needs: apply
-    environment: lab-pr
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
