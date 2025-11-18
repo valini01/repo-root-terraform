@@ -1,0 +1,51 @@
+name: Terraform Validate Reusable
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      AZURE_AD_CLIENT_ID:
+        required: true
+      AZURE_AD_CLIENT_SECRET:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+      AZURE_AD_TENANT_ID:
+        required: true
+      GH_PAT:
+        required: true
+
+jobs:
+  tfscan:
+    uses: ./.github/workflows/tfscan.yml
+    with:
+      workingDirectory: "."
+    secrets: inherit
+
+  validate:
+    runs-on: ubuntu-latest
+    needs: tfscan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git for Private Terraform Modules
+        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate

@@ -1,0 +1,58 @@
+name: Terraform Apply Reusable
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      AZURE_AD_CLIENT_ID:
+        required: true
+      AZURE_AD_CLIENT_SECRET:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+      AZURE_AD_TENANT_ID:
+        required: true
+      GH_PAT:
+        required: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}-apply   # <-- GitHub Approval Gate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git for Private Terraform Modules
+        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+        run: terraform plan -input=false -var="environment_name=${{ inputs.environment }}"
+       
+      - name: Terraform Apply
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+        run: terraform apply -auto-approve -input=false -var="environment_name=${{ inputs.environment }}"

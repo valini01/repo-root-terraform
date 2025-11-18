@@ -7,10 +7,10 @@ resources:
     name: "rg-live-demo"
 
   storage_account:
-    enabled: true
+    enabled: false
     name: "livesa002"
 
   key_vault:
-    enabled: true
+    enabled: false
     name: "live-kv-testing"
  

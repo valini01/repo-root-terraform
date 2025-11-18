@@ -1,0 +1,39 @@
+name: Terraform Lint Check
+
+on:
+  workflow_call:
+    inputs:
+      workingDirectory:
+        description: "Working Directory"
+        required: false
+        default: "."
+        type: string
+    secrets:
+      GH_PAT:
+        required: false
+
+jobs:
+  tf_lint_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git for Private Modules
+        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl unzip
+
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+      - name: Initialize TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        run: tflint --chdir=${{ inputs.workingDirectory }} --minimum-failure-severity=error
+        continue-on-error: true

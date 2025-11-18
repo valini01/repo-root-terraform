@@ -1,0 +1,117 @@
+name: "🧪 Deploy LAB for Feature Branch"
+
+on:
+  push:
+    branches:
+      - "features/shubhi/branching"
+
+
+jobs:
+  validate:
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy') }}
+    uses: ./.github/workflows/terraform-validate.yml
+    with:
+      environment: lab
+    secrets: inherit
+
+  plan:
+    needs: validate
+    uses: ./.github/workflows/terraform-plan.yml
+    with:
+      environment: lab
+    secrets: inherit
+
+  apply:
+    needs: plan
+    uses: ./.github/workflows/terraform-apply.yml
+    with:
+      environment: lab
+    secrets: inherit
+
+  destroy:
+    needs: apply
+    uses: ./.github/workflows/terraform-destroy.yml
+    with:
+      environment: lab
+    secrets: inherit
+
+  create-staging-pr:
+    name: "Auto PR → Staging"
+    needs: apply
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Check and Create Staging Branch
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "Checking if staging branch exists..."
+          
+          # Fetch all branches
+          git fetch origin
+          
+          # Check if staging branch exists remotely
+          if git ls-remote --heads origin staging | grep -q staging; then
+            echo "✅ Staging branch already exists"
+          else
+            echo "⚠️ Staging branch does not exist. Creating from main..."
+            
+            # Create staging branch from main
+            git fetch origin main:main
+            git checkout -b staging main
+            git push origin staging
+            
+            echo "✅ Staging branch created successfully"
+          fi
+
+      - name: Create PR to Staging (with approval required)
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "Creating PR from ${{ github.ref_name }} to staging..."
+          
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --base staging --head ${{ github.ref_name }} --state open --json number --jq '.[0].number')
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "✅ PR #$EXISTING_PR already exists"
+            gh pr view $EXISTING_PR --web || true
+          else
+            echo "Creating new PR..."
+            
+            # Create PR with reviewers
+            gh pr create \
+              --base staging \
+              --head ${{ github.ref_name }} \
+              --title "🚀 Promote ${{ github.ref_name }} → Staging" \
+              --body "## LAB Deployment Completed Successfully!
+          
+          **Source Branch:** \`${{ github.ref_name }}\`  
+          **Target Branch:** \`staging\`  
+          **Workflow Run:** [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          ### ✅ Deployment Summary
+          - Quality Scans: Passed
+          - Terraform Validate: Passed
+          - Terraform Plan: Generated
+          - Terraform Apply: Completed (LAB)
+          
+          **Environment:** LAB  
+          **Commit:** \`${{ github.sha }}\`
+          
+          ---
+          
+          ### ⚠️ Required Actions:
+          1. **Review the changes** in this PR
+          2. **Approve** if everything looks good
+          3. **Merge** to deploy to Staging environment
+          
+          > **Note:** This PR requires approval before merging. Branch protection rules enforce code review." \
+              --reviewer shubhi0302
+            
+            echo "✅ PR created successfully"
+          fi
