@@ -1,6 +1,6 @@
 provider "azurerm" {
   features {}
-  storage_use_azuread = true
+  storage_use_azuread             = true
   resource_provider_registrations = "none"
   # subscription_id                 = var.subscriptionId
   # tenant_id                       = var.tenantId
@@ -11,7 +11,7 @@ data "azurerm_client_config" "current" {}
 
 locals {
   env = yamldecode(
-    file("${path.root}/environments/${var.environment_name}.yml")  
+    file("${path.root}/environments/${var.environment_name}.yml")
   )
 }
 
