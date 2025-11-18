@@ -34,8 +34,8 @@ jobs:
     needs: apply
     uses: ./.github/workflows/terraform-destroy.yml
     with:
-      environment: lab
-    secrets: inherit
+      environment: lv
+    secrets: inherit    
 
   create-main-pr:
     if: github.event.pull_request.merged == true
@@ -49,7 +49,7 @@ jobs:
 
       - name: Create Pull Request to Main
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           # Check if PR already exists
           EXISTING_PR=$(gh pr list --base main --head staging --json number --jq '.[0].number')
