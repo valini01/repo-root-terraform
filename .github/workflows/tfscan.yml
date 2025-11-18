@@ -25,10 +25,10 @@ jobs:
     with:
       workingDirectory: ${{ inputs.workingDirectory }}
 
-  terraform-docs:
-    uses: ./.github/workflows/tfdocs.yml
-    with:
-      workingDirectory: ${{ inputs.workingDirectory }}
+  # terraform-docs:
+  #   uses: ./.github/workflows/tfdocs.yml
+  #   with:
+  #     workingDirectory: ${{ inputs.workingDirectory }}
 
   checkov:
     uses: ./.github/workflows/checkov.yml

@@ -42,3 +42,9 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate 
+
+  tfscan:
+    needs: validate
+    uses: ./.github/workflows/tfscan.yml
+    with:
+      workingDirectory: "."
