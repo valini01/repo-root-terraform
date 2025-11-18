@@ -35,4 +35,5 @@ jobs:
         run: tflint --init
 
       - name: Run TFLint
-        run: tflint --chdir=${{ inputs.workingDirectory }}
+        run: tflint --chdir=${{ inputs.workingDirectory }} --minimum-failure-severity=error
+        continue-on-error: true

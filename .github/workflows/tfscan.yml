@@ -17,11 +17,13 @@ jobs:
     uses: ./.github/workflows/tffmt.yml
     with:
       workingDirectory: ${{ inputs.workingDirectory }}
+    secrets: inherit
 
   terraform-security-scan:
     uses: ./.github/workflows/tfsec.yml
     with:
       workingDirectory: ${{ inputs.workingDirectory }}
+    secrets: inherit
 
   terraform-lint:
     uses: ./.github/workflows/tflint.yml
@@ -54,7 +56,7 @@ jobs:
     steps:
       - name: Check Quality Gate Status
         run: |
-          echo "🏁 Quality Gate Summary:"
+          echo "Quality Gate Summary:"
           echo "Format Check: ${{ needs.terraform-format-check.result }}"
           echo "Security Scan: ${{ needs.terraform-security-scan.result }}"
           echo "Terraform Lint: ${{ needs.terraform-lint.result }}"
@@ -66,8 +68,8 @@ jobs:
           if [[ "${{ needs.terraform-format-check.result }}" == "failure" ]] || \
              [[ "${{ needs.terraform-security-scan.result }}" == "failure" ]] || \
              [[ "${{ needs.terraform-lint.result }}" == "failure" ]]; then
-            echo "❌ Critical quality checks failed!"
+            echo "Critical quality checks failed!"
             exit 1
           else
-            echo "✅ All quality checks passed!"
+            echo "All quality checks passed!"
           fi
