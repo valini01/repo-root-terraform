@@ -19,8 +19,14 @@ on:
         required: true
 
 jobs:
+  tfscan:
+    uses: ./.github/workflows/tfscan.yml
+    with:
+      workingDirectory: "."
+
   validate:
     runs-on: ubuntu-latest
+    needs: tfscan
 
     steps:
       - name: Checkout code
@@ -41,10 +47,4 @@ jobs:
         run: terraform init
 
       - name: Terraform Validate
-        run: terraform validate 
-
-  tfscan:
-    needs: validate
-    uses: ./.github/workflows/tfscan.yml
-    with:
-      workingDirectory: "."
+        run: terraform validate

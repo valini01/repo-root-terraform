@@ -4,9 +4,21 @@ on:
   push:
     branches:
       - "features/shubhi/branching"
+  
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Choose action'
+        required: true
+        type: choice
+        options:
+          - deploy
+          - destroy
+        default: 'deploy'
 
 jobs:
   validate:
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy') }}
     uses: ./.github/workflows/terraform-validate.yml
     with:
       environment: lab
@@ -27,7 +39,7 @@ jobs:
     secrets: inherit
 
   destroy:
-    needs: apply
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' }}
     uses: ./.github/workflows/terraform-destroy.yml
     with:
       environment: lab
