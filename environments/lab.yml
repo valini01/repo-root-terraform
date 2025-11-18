@@ -5,7 +5,7 @@ location: "East US"
 resources:
   resource_group:
     enabled: true
-    name: "rg-lab-demo123"
+    name: "rg-lab-demo1234"
 
   storage_account:
     enabled: false
