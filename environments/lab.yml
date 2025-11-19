@@ -5,13 +5,13 @@ location: "East US"
 resources:
   resource_group:
     enabled: true
-    name: "rg-lab-89"
+    name: "rg-lab-89-valini"
 
   storage_account:
     enabled: false
-    name: "labsa001234"
+    name: "labsa001234-valini"
 
   key_vault:
     enabled: false
-    name: "lab-kv-testing123"
+    name: "lab-kv-testing123-valini"
   

@@ -4,13 +4,13 @@ location: "East US"
 resources:
   resource_group:
     enabled: true
-    name: "rg-live-demo1"
+    name: "rg-live-demo1-valini"
 
   storage_account:
     enabled: false
-    name: "livesa002"
+    name: "livesa002-valini"
 
   key_vault:
     enabled: false
-    name: "live-kv-testing"
+    name: "live-kv-testing-valini"
  
