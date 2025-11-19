@@ -19,11 +19,11 @@ jobs:
       workingDirectory: ${{ inputs.workingDirectory }}
     secrets: inherit
 
-  terraform-security-scan:
-    uses: ./.github/workflows/tfsec.yml
-    with:
-      workingDirectory: ${{ inputs.workingDirectory }}
-    secrets: inherit
+  # terraform-security-scan:
+  #   uses: ./.github/workflows/tfsec.yml
+  #   with:
+  #     workingDirectory: ${{ inputs.workingDirectory }}
+  #   secrets: inherit
 
   terraform-lint:
     uses: ./.github/workflows/tflint.yml

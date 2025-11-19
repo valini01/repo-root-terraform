@@ -20,12 +20,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure Git for Private Modules
-        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+        run: |
+          if [ -n "${{ secrets.GH_PAT }}" ]; then
+            git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+            echo "✅ Git authentication configured"
+          else
+            echo "⚠️ GH_PAT not provided, skipping Git authentication"
+          fi
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: '>= 1.9, < 2.0.0'  # Use a version range
+          terraform_version: '>= 1.9, < 2.0.0'
 
       - name: Initialize Terraform
         run: terraform init -backend=false
