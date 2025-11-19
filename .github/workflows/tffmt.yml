@@ -27,20 +27,8 @@ jobs:
         with:
           terraform_version: '>= 1.9, < 2.0.0'  # Use a version range
 
-      # - name: Initialize Terraform
-      #   run: terraform init
-      #   working-directory: ${{ inputs.workingDirectory }}
-
-
-      # 🟩 UPDATED Terraform Init with backend config
-      - name: Initialize Terraform Backend
-        run: |
-          echo "🔧 Initializing Terraform backend..."
-          terraform init \
-            -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
-            -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
-            -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
-            -backend-config="key=${{ inputs.environment }}.tfstate"
+      - name: Initialize Terraform
+        run: terraform init -backend=false
         working-directory: ${{ inputs.workingDirectory }}
 
       - name: Validate Terraform Code
