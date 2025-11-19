@@ -10,7 +10,7 @@ on:
         type: string
     secrets:
       GH_PAT:
-        required: false
+        required: true
 
 jobs:
   terraform-format-check:
