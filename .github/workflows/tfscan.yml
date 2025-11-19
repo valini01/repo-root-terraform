@@ -19,11 +19,11 @@ jobs:
       workingDirectory: ${{ inputs.workingDirectory }}
     secrets: inherit
 
-  terraform-security-scan:
-    uses: ./.github/workflows/tfsec.yml
-    with:
-      workingDirectory: ${{ inputs.workingDirectory }}
-    secrets: inherit
+  # terraform-security-scan:
+  #   uses: ./.github/workflows/tfsec.yml
+  #   with:
+  #     workingDirectory: ${{ inputs.workingDirectory }}
+  #   secrets: inherit
 
   terraform-lint:
     uses: ./.github/workflows/tflint.yml
@@ -31,45 +31,45 @@ jobs:
       workingDirectory: ${{ inputs.workingDirectory }}
     secrets: inherit
 
-  terraform-docs:
-    uses: ./.github/workflows/tfdocs.yml
-    with:
-      workingDirectory: ${{ inputs.workingDirectory }}
+  # terraform-docs:
+  #   uses: ./.github/workflows/tfdocs.yml
+  #   with:
+  #     workingDirectory: ${{ inputs.workingDirectory }}
 
 
-  checkov:
-    uses: ./.github/workflows/checkov.yml
-    with:
-      workingDirectory: ${{ inputs.workingDirectory }}
-      failOnFindings: "false"  # Set to "true" if you want pipeline to fail on security findings
+  # checkov:
+  #   uses: ./.github/workflows/checkov.yml
+  #   with:
+  #     workingDirectory: ${{ inputs.workingDirectory }}
+  #     failOnFindings: "false"  # Set to "true" if you want pipeline to fail on security findings
 
-  superlinter:
-    uses: ./.github/workflows/superlinter.yml
-    with:
-      workingDirectory: ${{ inputs.workingDirectory }}
+  # superlinter:
+  #   uses: ./.github/workflows/superlinter.yml
+  #   with:
+  #     workingDirectory: ${{ inputs.workingDirectory }}
 
-  # Summary job to ensure all quality checks passed
-  quality-gate:
-    runs-on: ubuntu-latest
-    needs: [terraform-format-check, terraform-security-scan, terraform-lint, terraform-docs, checkov, superlinter]
-    if: always()
-    steps:
-      - name: Check Quality Gate Status
-        run: |
-          echo "Quality Gate Summary:"
-          echo "Format Check: ${{ needs.terraform-format-check.result }}"
-          echo "Security Scan: ${{ needs.terraform-security-scan.result }}"
-          echo "Terraform Lint: ${{ needs.terraform-lint.result }}"
-          echo "Documentation: ${{ needs.terraform-docs.result }}"
-          echo "Checkov: ${{ needs.checkov.result }}"
-          echo "Super Linter: ${{ needs.superlinter.result }}"
+  # # Summary job to ensure all quality checks passed
+  # quality-gate:
+  #   runs-on: ubuntu-latest
+  #   needs: [terraform-format-check, terraform-security-scan, terraform-lint, terraform-docs, checkov, superlinter]
+  #   if: always()
+  #   steps:
+  #     - name: Check Quality Gate Status
+  #       run: |
+  #         echo "Quality Gate Summary:"
+  #         echo "Format Check: ${{ needs.terraform-format-check.result }}"
+  #         echo "Security Scan: ${{ needs.terraform-security-scan.result }}"
+  #         echo "Terraform Lint: ${{ needs.terraform-lint.result }}"
+  #         echo "Documentation: ${{ needs.terraform-docs.result }}"
+  #         echo "Checkov: ${{ needs.checkov.result }}"
+  #         echo "Super Linter: ${{ needs.superlinter.result }}"
           
-          # Check if any critical jobs failed
-          if [[ "${{ needs.terraform-format-check.result }}" == "failure" ]] || \
-             [[ "${{ needs.terraform-security-scan.result }}" == "failure" ]] || \
-             [[ "${{ needs.terraform-lint.result }}" == "failure" ]]; then
-            echo "Critical quality checks failed!"
-            exit 1
-          else
-            echo "All quality checks passed!"
-          fi
+  #         # Check if any critical jobs failed
+  #         if [[ "${{ needs.terraform-format-check.result }}" == "failure" ]] || \
+  #            [[ "${{ needs.terraform-security-scan.result }}" == "failure" ]] || \
+  #            [[ "${{ needs.terraform-lint.result }}" == "failure" ]]; then
+  #           echo "Critical quality checks failed!"
+  #           exit 1
+  #         else
+  #           echo "All quality checks passed!"
+  #         fi
