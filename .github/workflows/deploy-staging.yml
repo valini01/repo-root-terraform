@@ -31,28 +31,54 @@ jobs:
     secrets: inherit
 
   destroy:
+    needs: apply
     uses: ./.github/workflows/terraform-destroy.yml
     with:
-      environment: nlv
+      environment: lv
     secrets: inherit    
 
   create-main-pr:
     if: github.event.pull_request.merged == true
     needs: apply
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Authenticate GitHub App
+        env:
+          GH_APP_ID: ${{ secrets.APP_ID }}
+          GH_APP_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: |
+          # Generate JWT to authenticate as the GitHub App
+          header='{"alg":"RS256","typ":"JWT"}'
+          iat=$(($(date +%s) - 60))
+          exp=$(($(date +%s) + 540))
+          payload=$(jq -nc --arg iat "$iat" --arg exp "$exp" --arg iss "$GH_APP_ID" '{"iat":($iat|tonumber),"exp":($exp|tonumber),"iss":($iss|tonumber)}')
+          JWT=$(echo -n "${header}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')'.'$(echo -n "${payload}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          SIGNATURE=$(echo -n "${JWT}" | openssl dgst -binary -sha256 -sign <(echo "$GH_APP_PRIVATE_KEY") | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          JWT="${JWT}.${SIGNATURE}"
+
+          # Exchange JWT for an installation access token
+          ACCESS_TOKEN=$(curl -s -X POST \
+            -H "Authorization: Bearer $JWT" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/app/installations/$GH_APP_INSTALLATION_ID/access_tokens | jq -r .token)
+
+          echo "GH_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          echo "✅ Authenticated with GitHub App successfully"
+
       - name: Create Pull Request to Main
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ env.GH_TOKEN }}
         run: |
           # Check if PR already exists
           EXISTING_PR=$(gh pr list --base main --head staging --json number --jq '.[0].number')
-          
+
           if [ -z "$EXISTING_PR" ]; then
             gh pr create \
               --base main \
@@ -73,7 +99,7 @@ jobs:
           - [ ] Production deployment window confirmed
           
           **⚠️ This will deploy to PRODUCTION. Ensure all validations are complete.**"
-            echo "Created PR from staging to main"
+            echo "✅ Created PR from staging to main"
           else
-            echo "PR #$EXISTING_PR already exists from staging to main"
+            echo "ℹ️ PR #$EXISTING_PR already exists from staging to main"
           fi

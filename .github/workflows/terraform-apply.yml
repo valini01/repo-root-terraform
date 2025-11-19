@@ -27,8 +27,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 🟩 Authenticate using GitHub App (instead of PAT)
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.PRIVATE_KEY }}
+          installation_id: ${{ secrets.INSTALLATION_ID }}
+
+      # 🟩 Configure Git for private module access
       - name: Configure Git for Private Terraform Modules
-        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+        run: |
+          git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
+
+      # - name: Configure Git for Private Terraform Modules
+      #   run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -38,26 +52,19 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
 
-      - name: Terraform Init with Remote Backend
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      # - name: Terraform Init
+      #   run: terraform init
+
+      # 🟩 UPDATED Terraform Init with backend config
+      - name: Initialize Terraform Backend
         run: |
-          echo "🔧 Initializing Terraform with remote state backend..."
-          echo "Environment: ${{ inputs.environment }}"
-          echo "State file: terraform-${{ inputs.environment }}.tfstate"
-          
+          echo "🔧 Initializing Terraform backend..."
           terraform init \
             -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
-            -backend-config="key=terraform-${{ inputs.environment }}.tfstate" \
-            -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
-            -backend-config="tenant_id=${{ secrets.AZURE_AD_TENANT_ID }}" \
-            -backend-config="client_id=${{ secrets.AZURE_AD_CLIENT_ID }}" \
-            -backend-config="client_secret=${{ secrets.AZURE_AD_CLIENT_SECRET }}"
+            -backend-config="key=${{ inputs.environment }}.tfstate"\
+            -backend-config="use_azuread_auth=true"
 
       - name: Terraform Plan
         env:

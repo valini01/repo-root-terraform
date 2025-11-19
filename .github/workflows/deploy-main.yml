@@ -1,10 +1,14 @@
 name: "🏭 Deploy Production (Live LV)"
 
 on:
-  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 
 jobs:
   validate:
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/terraform-validate.yml
     with:
       environment: lv
@@ -23,3 +27,57 @@ jobs:
     with:
       environment: lv
     secrets: inherit
+
+  cleanup-feature-branch:
+    name: "🧹 Delete Deployed Feature Branch"
+    needs: apply
+    if: success()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Authenticate GitHub App
+        env:
+          GH_APP_ID: ${{ secrets.APP_ID }}
+          GH_APP_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: |
+          # Generate JWT to authenticate as the GitHub App
+          header='{"alg":"RS256","typ":"JWT"}'
+          iat=$(($(date +%s) - 60))
+          exp=$(($(date +%s) + 540))
+          payload=$(jq -nc --arg iat "$iat" --arg exp "$exp" --arg iss "$GH_APP_ID" '{"iat":($iat|tonumber),"exp":($exp|tonumber),"iss":($iss|tonumber)}')
+          JWT=$(echo -n "${header}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')'.'$(echo -n "${payload}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          SIGNATURE=$(echo -n "${JWT}" | openssl dgst -binary -sha256 -sign <(echo "$GH_APP_PRIVATE_KEY") | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          JWT="${JWT}.${SIGNATURE}"
+
+          # Exchange JWT for installation access token
+          ACCESS_TOKEN=$(curl -s -X POST \
+            -H "Authorization: Bearer $JWT" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/app/installations/$GH_APP_INSTALLATION_ID/access_tokens | jq -r .token)
+
+          echo "GH_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          echo "✅ Authenticated with GitHub App successfully"
+
+      - name: Identify merged feature branch
+        id: find_branch
+        run: |
+          # Get the branch from the most recent merged PR to staging
+          FEATURE_BRANCH=$(gh pr list --repo ${{ github.repository }} --state merged --base staging --limit 1 --json headRefName --jq '.[0].headRefName' || echo "")
+          echo "feature_branch=$FEATURE_BRANCH" >> $GITHUB_OUTPUT
+          echo "🔍 Found merged feature branch: $FEATURE_BRANCH"
+
+      - name: Delete remote feature branch
+        if: steps.find_branch.outputs.feature_branch != ''
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          BRANCH=${{ steps.find_branch.outputs.feature_branch }}
+          echo "🧹 Deleting remote branch: $BRANCH"
+          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} --delete $BRANCH || echo "⚠️ Could not delete $BRANCH"
+          echo "✅ Cleanup complete — staging and main remain."
