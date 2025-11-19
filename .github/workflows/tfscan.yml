@@ -17,7 +17,8 @@ jobs:
     uses: ./.github/workflows/tffmt.yml
     with:
       workingDirectory: ${{ inputs.workingDirectory }}
-    secrets: inherit
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
 
   # terraform-security-scan:
   #   uses: ./.github/workflows/tfsec.yml
@@ -29,7 +30,8 @@ jobs:
     uses: ./.github/workflows/tflint.yml
     with:
       workingDirectory: ${{ inputs.workingDirectory }}
-    secrets: inherit
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
 
   # terraform-docs:
   #   uses: ./.github/workflows/tfdocs.yml

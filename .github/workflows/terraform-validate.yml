@@ -15,12 +15,16 @@ on:
         required: true
       AZURE_AD_TENANT_ID:
         required: true
+      GH_PAT:
+        required: true
 
 jobs:
   tfscan:
     uses: ./.github/workflows/tfscan.yml
     with:
       workingDirectory: "."
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
 
   validate:
     runs-on: ubuntu-latest
@@ -30,8 +34,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure Git for Private Terraform Modules
-        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+      - name: Configure Git for Private Modules
+        run: |
+          git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+        # 🔐 This is required to download private module repos again
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
