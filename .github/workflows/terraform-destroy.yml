@@ -17,12 +17,6 @@ on:
         required: true
       GH_PAT:
         required: true
-      STATE_RESOURCE_GROUP_NAME:
-        required: true
-      STATE_STORAGE_ACCOUNT_NAME:
-        required: true
-      STATE_CONTAINER_NAME:
-        required: true
 
 jobs:
   destroy:
@@ -58,9 +52,9 @@ jobs:
           echo "State file: terraform-${{ inputs.environment }}.tfstate"
           
           terraform init \
-            -backend-config="resource_group_name=${{ secrets.STATE_RESOURCE_GROUP_NAME }}" \
-            -backend-config="storage_account_name=${{ secrets.STATE_STORAGE_ACCOUNT_NAME }}" \
-            -backend-config="container_name=${{ secrets.STATE_CONTAINER_NAME }}" \
+            -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
+            -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
             -backend-config="key=terraform-${{ inputs.environment }}.tfstate" \
             -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
             -backend-config="tenant_id=${{ secrets.AZURE_AD_TENANT_ID }}" \
