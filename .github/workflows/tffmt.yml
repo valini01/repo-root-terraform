@@ -28,7 +28,7 @@ jobs:
           terraform_version: '>= 1.9, < 2.0.0'  # Use a version range
 
       - name: Initialize Terraform
-        run: terraform init
+        run: terraform init -backend=false
         working-directory: ${{ inputs.workingDirectory }}
 
       - name: Validate Terraform Code

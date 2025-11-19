@@ -3,7 +3,7 @@ name: "🧪 Deploy LAB for Feature Branch"
 on:
   push:
     branches:
-      - "features/shubhi/branching"
+      - "features/valini/branching"
 
 
 jobs:
