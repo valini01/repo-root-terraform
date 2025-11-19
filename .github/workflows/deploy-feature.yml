@@ -11,28 +11,56 @@ jobs:
     uses: ./.github/workflows/terraform-validate.yml
     with:
       environment: lab
-    secrets: inherit
+    secrets:
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
   plan:
     needs: validate
     uses: ./.github/workflows/terraform-plan.yml
     with:
       environment: lab
-    secrets: inherit
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      STATE_RESOURCE_GROUP_NAME: ${{ secrets.STATE_RESOURCE_GROUP_NAME }}
+      STATE_STORAGE_ACCOUNT_NAME: ${{ secrets.STATE_STORAGE_ACCOUNT_NAME }}
+      STATE_CONTAINER_NAME: ${{ secrets.STATE_CONTAINER_NAME }}
 
   apply:
     needs: plan
     uses: ./.github/workflows/terraform-apply.yml
     with:
       environment: lab
-    secrets: inherit
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      STATE_RESOURCE_GROUP_NAME: ${{ secrets.STATE_RESOURCE_GROUP_NAME }}
+      STATE_STORAGE_ACCOUNT_NAME: ${{ secrets.STATE_STORAGE_ACCOUNT_NAME }}
+      STATE_CONTAINER_NAME: ${{ secrets.STATE_CONTAINER_NAME }}
 
   destroy:
     needs: apply
     uses: ./.github/workflows/terraform-destroy.yml
     with:
       environment: lab
-    secrets: inherit
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
+      AZURE_AD_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      AZURE_AD_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      STATE_RESOURCE_GROUP_NAME: ${{ secrets.STATE_RESOURCE_GROUP_NAME }}
+      STATE_STORAGE_ACCOUNT_NAME: ${{ secrets.STATE_STORAGE_ACCOUNT_NAME }}
+      STATE_CONTAINER_NAME: ${{ secrets.STATE_CONTAINER_NAME }}
 
   create-staging-pr:
     name: "Auto PR → Staging"
