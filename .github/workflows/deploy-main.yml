@@ -24,8 +24,7 @@ jobs:
       environment: lv
     secrets: inherit
 
-
-    cleanup-feature-branch:
+  cleanup-feature-branch:
     name: "🧹 Delete Deployed Feature Branch"
     needs: apply
     if: success()
@@ -41,7 +40,6 @@ jobs:
       - name: Identify merged feature branch
         id: find_branch
         run: |
-          # Find the last merged feature branch from commit history
           FEATURE_BRANCH=$(git log --merges --oneline -n 5 | grep -o 'feature/[^[:space:]]*' | head -1 || echo "")
           echo "feature_branch=$FEATURE_BRANCH" >> $GITHUB_OUTPUT
           echo "🔍 Found merged branch: $FEATURE_BRANCH"
