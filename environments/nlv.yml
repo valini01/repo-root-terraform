@@ -1,0 +1,14 @@
+environment: non-live
+
+location: "East US"
+resources:
+  resource_group:
+    enabled: true
+    name: "rg-non-live-demo-valini"
+  storage_account:
+    enabled: false
+    name: "nonlivesa003-valini"
+
+  key_vault:
+    enabled: false
+    name: "nonlive-kv-testing-valini"

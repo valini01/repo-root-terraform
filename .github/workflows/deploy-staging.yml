@@ -1,0 +1,80 @@
+name: "🔄 Deploy Staging (NLV Environment)"
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - staging
+
+jobs:
+  validate:
+    if: github.event.pull_request.merged == true
+    uses: ./.github/workflows/terraform-validate.yml
+    with:
+      environment: nlv
+    secrets: inherit
+
+  plan:
+    if: github.event.pull_request.merged == true
+    needs: validate
+    uses: ./.github/workflows/terraform-plan.yml
+    with:
+      environment: nlv
+    secrets: inherit
+
+  apply:
+    if: github.event.pull_request.merged == true
+    needs: plan
+    uses: ./.github/workflows/terraform-apply.yml
+    with:
+      environment: nlv
+    secrets: inherit
+
+  destroy:
+    needs: apply
+    uses: ./.github/workflows/terraform-destroy.yml
+    with:
+      environment: lv
+    secrets: inherit    
+
+  create-main-pr:
+    if: github.event.pull_request.merged == true
+    needs: apply
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Pull Request to Main
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --base main --head staging --json number --jq '.[0].number')
+          
+          if [ -z "$EXISTING_PR" ]; then
+            gh pr create \
+              --base main \
+              --head staging \
+              --title "🚀 Deploy NLV to Production (LV)" \
+              --body "### 🎯 Staging to Production Promotion
+
+          **Source Environment:** NLV (Staging)
+          **Target Environment:** LV (Production)
+          **Triggered by:** Merge of PR #${{ github.event.pull_request.number }}
+          
+          ✅ NLV deployment completed successfully
+          ✅ All quality scans passed
+          
+          ### 📋 Deployment Checklist
+          - [ ] NLV environment validated
+          - [ ] Stakeholder approval obtained
+          - [ ] Production deployment window confirmed
+          
+          **⚠️ This will deploy to PRODUCTION. Ensure all validations are complete.**"
+            echo "Created PR from staging to main"
+          else
+            echo "PR #$EXISTING_PR already exists from staging to main"
+          fi

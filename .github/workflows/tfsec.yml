@@ -1,0 +1,26 @@
+name: tfsec Security Check
+
+on:
+  workflow_call:
+    inputs:
+      workingDirectory:
+        description: "Working Directory"
+        required: false
+        default: "."
+        type: string
+
+jobs:
+  tfsec_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install tfsec
+        run: |
+          curl -LO https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64
+          chmod +x tfsec-linux-amd64
+          sudo mv tfsec-linux-amd64 /usr/local/bin/tfsec
+
+      - name: Run tfsec
+        run: tfsec ${{ inputs.workingDirectory }}

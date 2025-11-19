@@ -1,0 +1,76 @@
+name: Checkov Scan
+
+on:
+  workflow_call:
+    inputs:
+      workingDirectory:
+        description: "Directory to scan"
+        required: false
+        default: "."
+        type: string
+      failOnFindings:
+        description: "Fail pipeline if Checkov finds issues"
+        required: false
+        default: "false"
+        type: string
+      skipChecks:
+        description: "Comma-separated Checkov check IDs to skip"
+        required: false
+        default: "CKV_TF_1"
+        type: string
+
+jobs:
+  checkov:
+    name: Run Checkov Security Scan
+    runs-on: ubuntu-latest
+
+    env:
+      WORKING_DIRECTORY: ${{ inputs.workingDirectory }}
+      FAIL_ON_FINDINGS: ${{ inputs.failOnFindings }}
+      SKIP_CHECKS: ${{ inputs.skipChecks }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run Checkov
+        continue-on-error: true
+        run: |
+          echo "🔍 Running Checkov in directory: $WORKING_DIRECTORY"
+          docker pull bridgecrew/checkov
+
+          docker run --rm \
+            -v "${{ github.workspace }}/$WORKING_DIRECTORY:/tf" \
+            bridgecrew/checkov \
+            --directory /tf \
+            --output json \
+            --quiet \
+            --compact \
+            --skip-check "$SKIP_CHECKS" \
+            --download-external-modules true > checkov-output.json
+      
+      - name: Fix ownership of Checkov external modules
+        if: always()
+        run: |
+          echo "🔧 Fixing ownership of .external_modules..."
+          sudo chown -R $(id -u):$(id -g) "${{ github.workspace }}/${{ env.WORKING_DIRECTORY }}/.external_modules" || true
+
+      - name: Show Checkov JSON output
+        run: cat checkov-output.json || echo "No Checkov output found."
+
+      - name: Fail if Checkov Findings Exist
+        if: ${{ env.failOnFindings == 'true' }}
+        run: |
+          if ! command -v jq &> /dev/null; then
+            echo "Installing jq..."
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+
+          failed=$(jq '.summary.failed' checkov-output.json)
+
+          if [ "$failed" -gt 0 ]; then
+            echo "❌ Checkov found $failed failed checks. Failing the pipeline."
+            exit 1
+          else
+            echo "✅ No Checkov failures found."
+          fi

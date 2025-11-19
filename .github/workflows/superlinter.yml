@@ -1,0 +1,61 @@
+name: Super-Linter Scan
+
+on:
+  workflow_call:
+    inputs:
+      workingDirectory:
+        description: "Directory to scan"
+        required: false
+        default: "."
+        type: string
+      failOnFindings:
+        description: "Fail pipeline if Super-Linter finds issues"
+        required: false
+        default: "false"
+        type: string
+
+jobs:
+  super-lint:
+    name: Run Super-Linter
+    runs-on: ubuntu-latest
+
+    env:
+      WORKING_DIRECTORY: ${{ inputs.workingDirectory }}
+      FAIL_ON_FINDINGS: ${{ inputs.failOnFindings }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth : 0
+
+      - name: Pull Super-Linter Docker Image
+        run: |
+          docker pull github/super-linter:v5.0.0
+
+      - name: Run Super-Linter with Docker
+        run: |
+          docker run --rm \
+            -e RUN_LOCAL=true \
+            -e LINTER_RULES_PATH=/ \
+            -e FILTER_REGEX_EXCLUDE=".*\\.github/.*|.*tfdocs/.*" \
+            -e VALIDATE_TERRAFORM_TFLINT=false \
+            -e VALIDATE_TERRAFORM_TERRASCAN=false \
+            -e VALIDATE_MARKDOWN=false \
+            -e VALIDATE_NATURAL_LANGUAGE=false \
+            -e VALIDATE_TERRAFORM_FMT=false \
+            -e VALIDATE_JSCPD=false \
+            -e USE_FIND_ALGORITHM=true \
+            -v "${{ github.workspace }}:/tmp/lint" \
+            github/super-linter:v5.0.0
+
+      - name: Fix file permissions after Super-Linter
+        if: always()
+        run: |
+          echo "Resetting file ownership to avoid permission issues..."
+          sudo chown -R $(id -u):$(id -g) ${{ github.workspace }}
+
+      - name: Handle Linter Failure (optional soft fail)
+        if: failure() && env.FAIL_ON_FINDINGS == 'false'
+        run: |
+          echo "Linter found issues, but soft-fail is enabled. Marking step as successful."
