@@ -10,7 +10,7 @@ on:
         type: string
     secrets:
       GH_PAT:
-        required: false
+        required: true
 
 jobs:
   tf_fmt_check:
@@ -20,12 +20,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure Git for Private Modules
-        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+        run: |
+          git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+          echo "🔐 Git configured for private modules"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: '>= 1.9, < 2.0.0'  # Use a version range
+          terraform_version: '>= 1.9, < 2.0.0'
 
       - name: Initialize Terraform
         run: terraform init -backend=false

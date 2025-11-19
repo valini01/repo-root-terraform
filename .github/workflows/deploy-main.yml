@@ -1,10 +1,14 @@
 name: "🏭 Deploy Production (Live LV)"
 
 on:
-  workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 
 jobs:
   validate:
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/terraform-validate.yml
     with:
       environment: lv
@@ -63,9 +67,10 @@ jobs:
       - name: Identify merged feature branch
         id: find_branch
         run: |
-          FEATURE_BRANCH=$(git log --merges --oneline -n 5 | grep -o 'feature/[^[:space:]]*' | head -1 || echo "")
+          # Get the branch from the most recent merged PR to staging
+          FEATURE_BRANCH=$(gh pr list --repo ${{ github.repository }} --state merged --base staging --limit 1 --json headRefName --jq '.[0].headRefName' || echo "")
           echo "feature_branch=$FEATURE_BRANCH" >> $GITHUB_OUTPUT
-          echo "🔍 Found merged branch: $FEATURE_BRANCH"
+          echo "🔍 Found merged feature branch: $FEATURE_BRANCH"
 
       - name: Delete remote feature branch
         if: steps.find_branch.outputs.feature_branch != ''
