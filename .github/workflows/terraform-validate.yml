@@ -29,7 +29,8 @@ jobs:
     uses: ./.github/workflows/tfscan.yml
     with:
       workingDirectory: "."
-    secrets: inherit
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
 
   validate:
     runs-on: ubuntu-latest
