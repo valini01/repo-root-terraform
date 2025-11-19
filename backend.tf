@@ -1,9 +1,7 @@
-# terraform {
-#   backend "azurerm" {
-#     resource_group_name  = "tfstate-rg"
-#     storage_account_name = "tfstatestorage123valini"
-#     container_name       = "tfstate"
-#     key                  = "terraform.tfstate"
-#     use_azuread_auth     = true
-#   }
-# }
+terraform {
+  backend "azurerm" {
+    # Configuration will be provided during terraform init via -backend-config flags
+    # This allows different state files per environment
+    use_azuread_auth = true
+  }
+}
