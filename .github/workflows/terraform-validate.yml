@@ -33,8 +33,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 🟩 Authenticate using GitHub App (instead of PAT)
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.PRIVATE_KEY }}
+          installation_id: ${{ secrets.INSTALLATION_ID }}
+
+      # 🟩 Configure Git for private module access
       - name: Configure Git for Private Terraform Modules
-        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+        run: |
+          git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
+
+      # - name: Configure Git for Private Terraform Modules
+      #   run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
