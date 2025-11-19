@@ -5,7 +5,6 @@ on:
     branches:
       - "features/valini/branching"
 
-
 jobs:
   validate:
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy') }}
@@ -39,38 +38,57 @@ jobs:
     name: "Auto PR → Staging"
     needs: apply
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
+
+      - name: Authenticate GitHub App
+        env:
+          GH_APP_ID: ${{ secrets.APP_ID }}
+          GH_APP_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: |
+          # Generate JWT to authenticate as the GitHub App
+          header='{"alg":"RS256","typ":"JWT"}'
+          iat=$(($(date +%s) - 60))
+          exp=$(($(date +%s) + 540))
+          payload=$(jq -nc --arg iat "$iat" --arg exp "$exp" --arg iss "$GH_APP_ID" '{"iat":($iat|tonumber),"exp":($exp|tonumber),"iss":($iss|tonumber)}')
+          JWT=$(echo -n "${header}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')'.'$(echo -n "${payload}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          SIGNATURE=$(echo -n "${JWT}" | openssl dgst -binary -sha256 -sign <(echo "$GH_APP_PRIVATE_KEY") | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          JWT="${JWT}.${SIGNATURE}"
+
+          # Exchange JWT for installation access token
+          ACCESS_TOKEN=$(curl -s -X POST \
+            -H "Authorization: Bearer $JWT" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/app/installations/$GH_APP_INSTALLATION_ID/access_tokens | jq -r .token)
+
+          echo "GH_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          echo "✅ Authenticated with GitHub App successfully"
 
       - name: Check and Create Staging Branch
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ env.GH_TOKEN }}
         run: |
           echo "Checking if staging branch exists..."
-          
-          # Fetch all branches
           git fetch origin
           
-          # Check if staging branch exists remotely
           if git ls-remote --heads origin staging | grep -q staging; then
             echo "✅ Staging branch already exists"
           else
             echo "⚠️ Staging branch does not exist. Creating from main..."
-            
-            # Create staging branch from main
             git fetch origin main:main
             git checkout -b staging main
-            git push origin staging
-            
+            git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} staging
             echo "✅ Staging branch created successfully"
           fi
 
       - name: Create PR to Staging (with approval required)
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ env.GH_TOKEN }}
         run: |
           echo "Creating PR from ${{ github.ref_name }} to staging..."
           
@@ -83,7 +101,6 @@ jobs:
           else
             echo "Creating new PR..."
             
-            # Create PR with reviewers
             gh pr create \
               --base staging \
               --head ${{ github.ref_name }} \
@@ -106,9 +123,9 @@ jobs:
           ---
           
           ### ⚠️ Required Actions:
-          1. **Review the changes** in this PR
-          2. **Approve** if everything looks good
-          3. **Merge** to deploy to Staging environment
+          1. **Review the changes** in this PR  
+          2. **Approve** if everything looks good  
+          3. **Merge** to deploy to Staging environment  
           
           > **Note:** This PR requires approval before merging. Branch protection rules enforce code review." \
               --reviewer shubhi0302

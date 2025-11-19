@@ -34,8 +34,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+
+      - name: Authenticate GitHub App
+        env:
+          GH_APP_ID: ${{ secrets.APP_ID }}
+          GH_APP_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: |
+          # Generate JWT to authenticate as the GitHub App
+          header='{"alg":"RS256","typ":"JWT"}'
+          iat=$(($(date +%s) - 60))
+          exp=$(($(date +%s) + 540))
+          payload=$(jq -nc --arg iat "$iat" --arg exp "$exp" --arg iss "$GH_APP_ID" '{"iat":($iat|tonumber),"exp":($exp|tonumber),"iss":($iss|tonumber)}')
+          JWT=$(echo -n "${header}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')'.'$(echo -n "${payload}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          SIGNATURE=$(echo -n "${JWT}" | openssl dgst -binary -sha256 -sign <(echo "$GH_APP_PRIVATE_KEY") | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          JWT="${JWT}.${SIGNATURE}"
+
+          # Exchange JWT for installation access token
+          ACCESS_TOKEN=$(curl -s -X POST \
+            -H "Authorization: Bearer $JWT" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/app/installations/$GH_APP_INSTALLATION_ID/access_tokens | jq -r .token)
+
+          echo "GH_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          echo "✅ Authenticated with GitHub App successfully"
 
       - name: Identify merged feature branch
         id: find_branch
@@ -46,8 +69,10 @@ jobs:
 
       - name: Delete remote feature branch
         if: steps.find_branch.outputs.feature_branch != ''
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
         run: |
           BRANCH=${{ steps.find_branch.outputs.feature_branch }}
           echo "🧹 Deleting remote branch: $BRANCH"
-          git push origin --delete $BRANCH || echo "⚠️ Could not delete $BRANCH"
+          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} --delete $BRANCH || echo "⚠️ Could not delete $BRANCH"
           echo "✅ Cleanup complete — staging and main remain."
