@@ -47,5 +47,8 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
 
+      - name: Terraform Init (No Backend)
+        run: terraform init -backend=false
+
       - name: Terraform Validate
         run: terraform validate
