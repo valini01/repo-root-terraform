@@ -31,10 +31,9 @@ jobs:
     secrets: inherit
 
   destroy:
-    needs: apply
     uses: ./.github/workflows/terraform-destroy.yml
     with:
-      environment: lv
+      environment: nlv
     secrets: inherit    
 
   create-main-pr:

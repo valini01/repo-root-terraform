@@ -61,7 +61,8 @@ jobs:
             -backend-config="key=terraform-${{ inputs.environment }}.tfstate" \
             -backend-config="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
             -backend-config="tenant_id=${{ secrets.AZURE_AD_TENANT_ID }}" \
-            -backend-config="client_id=${{ secrets.AZURE_AD_CLIENT_ID }}"
+            -backend-config="client_id=${{ secrets.AZURE_AD_CLIENT_ID }}" \
+            -backend-config="client_secret=${{ secrets.AZURE_AD_CLIENT_SECRET }}"
 
       - name: Terraform Plan
         env:
