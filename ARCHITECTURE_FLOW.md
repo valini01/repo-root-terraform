@@ -107,21 +107,25 @@ tags:
 ### 6.1 Component Overview
 ```mermaid
 flowchart LR
+  %% Environment configuration files feeding locals
   subgraph ENV[Environment Config]
     YML_LAB[lab.yml]
     YML_LIVE[live.yml]
     YML_NONLIVE[non-live.yml]
   end
-  subgraph ROOT[Root / Workload Repo]
+  %% Root repo orchestration layer
+  subgraph ROOT[Root Workload Repo]
     MAIN_ROOT[main.tf]
-    LOCALS[locals (yamldecode)]
+    LOCALS[locals: yamldecode]
     VARS_ROOT[variables.tf]
   end
+  %% Reusable modules
   subgraph MODS[Modules Repo]
     MF_AI[ai_foundry]
     MF_KV[key_vault]
     MF_STORAGE[storage_account]
   end
+  %% Azure resources produced
   subgraph AZ[Azure Resources]
     R_AI[AI Foundry Resource]
     R_KV[Key Vault]
