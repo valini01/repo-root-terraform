@@ -11,7 +11,7 @@ jobs:
     if: github.event.pull_request.merged == true
     uses: ./.github/workflows/terraform-validate.yml
     with:
-      environment: nlv
+      environment: non-live
     secrets: inherit
 
   plan:
@@ -19,7 +19,7 @@ jobs:
     needs: validate
     uses: ./.github/workflows/terraform-plan.yml
     with:
-      environment: nlv
+      environment: non-live
     secrets: inherit
 
   apply:
@@ -27,14 +27,14 @@ jobs:
     needs: plan
     uses: ./.github/workflows/terraform-apply.yml
     with:
-      environment: nlv
+      environment: non-live
     secrets: inherit
 
   destroy:
     needs: apply
     uses: ./.github/workflows/terraform-destroy.yml
     with:
-      environment: lv
+      environment: live
     secrets: inherit    
 
   create-main-pr:

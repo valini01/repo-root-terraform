@@ -3,7 +3,7 @@ name: "🧪 Deploy LAB for Feature Branch"
 on:
   push:
     branches:
-      - "features/shubhi/deleting"
+      - "features/valini/deleting"
 
 jobs:
   validate:
