@@ -1,0 +1,140 @@
+name: "Auto Release Version (on PR merged to main)"
+
+# Trigger only when a PR into main is closed (we filter for merged PRs in the job)
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-version:
+    name: "Create New Version Tag (only on merged PR + branch deleted)"
+    runs-on: ubuntu-latest
+
+    # Only continue if the PR was merged (github.event.pull_request.merged is true)
+    if: ${{ github.event.pull_request.merged == true }}
+
+    env:
+      REPO: ${{ github.repository }}
+      GITHUB_API: https://api.github.com
+
+    steps:
+      - name: Checkout main (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Authenticate GitHub App (get installation token)
+        id: app-auth
+        env:
+          GH_APP_ID: ${{ secrets.APP_ID }}
+          GH_APP_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: |
+          # build JWT
+          header='{"alg":"RS256","typ":"JWT"}'
+          iat=$(($(date +%s) - 60))
+          exp=$(($(date +%s) + 540))
+          payload=$(jq -nc --arg iat "$iat" --arg exp "$exp" --arg iss "$GH_APP_ID" '{"iat":($iat|tonumber),"exp":($exp|tonumber),"iss":($iss|tonumber)}')
+
+          JWT=$(echo -n "${header}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')'.'$(echo -n "${payload}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          SIGNATURE=$(echo -n "${JWT}" | openssl dgst -binary -sha256 -sign <(echo "$GH_APP_PRIVATE_KEY") | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
+          JWT="${JWT}.${SIGNATURE}"
+
+          ACCESS_TOKEN=$(curl -s -X POST \
+            -H "Authorization: Bearer $JWT" \
+            -H "Accept: application/vnd.github+json" \
+            ${GITHUB_API}/app/installations/$GH_APP_INSTALLATION_ID/access_tokens | jq -r .token)
+
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
+            echo "Failed to get installation token"
+            exit 1
+          fi
+
+          echo "token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+          echo "GH_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+
+      - name: Ensure feature branch was deleted
+        # HEAD ref of the merged PR (branch in source repo)
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          echo "Checking whether feature branch '$HEAD_BRANCH' still exists..."
+          # Query branch via API; if 404 -> deleted
+          resp=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "${GITHUB_API}/repos/${REPO}/branches/${HEAD_BRANCH}")
+          if [ "$resp" = "404" ]; then
+            echo "✅ Feature branch '$HEAD_BRANCH' appears deleted (HTTP 404). Proceeding with release."
+          else
+            echo "Feature branch '$HEAD_BRANCH' still exists (HTTP $resp). Aborting release to avoid premature tagging."
+            exit 1
+          fi
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Read current version from root/version.json and compute new tag
+        id: compute_version
+        run: |
+          if [ ! -f version.json ]; then
+            echo "version.json missing at repo root. Create one with {\"module_version\":\"v0.0.0\"} and re-run."
+            exit 1
+          fi
+
+          CURRENT=$(jq -r '.module_version' version.json)
+          # strip leading v if present
+          STRIPPED=$(echo "${CURRENT}" | sed 's/^v//')
+          echo "Current version: ${CURRENT}"
+
+          NEW=$(echo "${STRIPPED}" | awk -F. -v OFS=. '{$NF += 1 ; print}')
+          NEW_TAG="v${NEW}"
+
+          echo "new_tag=${NEW_TAG}" >> $GITHUB_OUTPUT
+          echo "NEW_TAG=${NEW_TAG}" >> $GITHUB_ENV
+          echo "Computed new tag: ${NEW_TAG}"
+
+      - name: Ensure tag does not already exist
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+          NEW_TAG: ${{ env.NEW_TAG }}
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "${GITHUB_API}/repos/${REPO}/git/ref/tags/${NEW_TAG}")
+          if [ "$code" = "200" ]; then
+            echo "Tag ${NEW_TAG} already exists. Aborting."
+            exit 1
+          fi
+          echo "Tag ${NEW_TAG} is available."
+
+      - name: Create annotated git tag and push
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+          NEW_TAG: ${{ env.NEW_TAG }}
+        run: |
+          git config user.email "github-app@automation.local"
+          git config user.name "GitHub App (automation)"
+
+          # Create annotated tag pointing to HEAD (main after merge)
+          git tag -a "${NEW_TAG}" -m "Release ${NEW_TAG}"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}" "${NEW_TAG}"
+
+      - name: Update version.json in repo root to new version
+        env:
+          NEW_TAG: ${{ env.NEW_TAG }}
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          # Overwrite version.json with the new tag
+          jq -n --arg v "${NEW_TAG}" '{"module_version":$v}' > version.json
+          # Commit and push back to main (this push will not retrigger this workflow because it only listens to PR closed)
+          git add version.json
+          if git commit -m "chore: bump version to ${NEW_TAG}" ; then
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}" main
+            echo "✅ version.json updated and pushed."
+          else
+            echo "No change to commit."
+          fi
