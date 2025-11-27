@@ -12,5 +12,15 @@ resources:
 
   key_vault:
     enabled: false
+<<<<<<< HEAD
+<<<<<<<< HEAD:environments/live/config.yml
    
  
+========
+    
+  
+>>>>>>>> 0aa2f2c (my updated file):environments/lab/config.yml
+=======
+    
+ 
+>>>>>>> 0aa2f2c (my updated file)

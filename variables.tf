@@ -10,7 +10,7 @@
 #   default = null
 # }
 variable "environment_name" {
-  description = "Environment key to select config (lab | nlv | lv)"
+  description = "Environment key to select config (lab | non-live | live)"
   type        = string
 }
 variable "location"      { type = string }

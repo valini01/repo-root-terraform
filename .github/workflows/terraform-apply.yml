@@ -22,6 +22,7 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}-apply
+    environment: ${{ inputs.environment }}-apply
 
     steps:
       - name: Checkout code
@@ -55,6 +56,7 @@ jobs:
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
             -backend-config="key=${{ inputs.environment }}.tfstate" \
+            -backend-config="key=${{ inputs.environment }}.tfstate" \
             -backend-config="use_azuread_auth=true"
 
       - name: Terraform Plan
@@ -66,7 +68,7 @@ jobs:
         run: |
           terraform plan -input=false \
             -var="environment_name=${{ inputs.environment }}" \
-            -var-file="environments/${{ inputs.environment }}/config.yml"
+            -var-file="environments/${{ inputs.environment }}/config.yaml"
 
       - name: Terraform Apply
         env:
@@ -77,4 +79,4 @@ jobs:
         run: |
           terraform apply -auto-approve -input=false \
             -var="environment_name=${{ inputs.environment }}" \
-            -var-file="environments/${{ inputs.environment }}/config.yml"
+            -var-file="environments/${{ inputs.environment }}/config.yaml"

@@ -67,4 +67,8 @@ jobs:
         run: |
           terraform plan -input=false \
             -var="environment_name=${{ inputs.environment }}" \
+<<<<<<< HEAD
             -var-file="environments/${{ inputs.environment }}/config.yml"
+=======
+            -var-file="environments/${{ inputs.environment }}/config.yaml"
+>>>>>>> 0aa2f2c (my updated file)

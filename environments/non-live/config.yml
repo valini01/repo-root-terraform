@@ -4,6 +4,7 @@ location: "East US"
 resources:
   resource_group:
     enabled: true
+<<<<<<< HEAD
   
   storage_account:
     enabled: false
@@ -11,3 +12,13 @@ resources:
 
   key_vault:
     enabled: false
+=======
+    
+  storage_account:
+    enabled: false
+   
+
+  key_vault:
+    enabled: false
+    
+>>>>>>> 0aa2f2c (my updated file)

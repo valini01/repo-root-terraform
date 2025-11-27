@@ -62,4 +62,8 @@ jobs:
         run: terraform init -backend=false
 
       - name: Terraform Validate
-        run: terraform validate
+        run: |
+          terraform validate -no-color
+          terraform plan -input=false -refresh=false \
+            -var="environment_name=${{ inputs.environment }}" \
+            -var-file="environments/${{ inputs.environment }}/config.yaml" || true
