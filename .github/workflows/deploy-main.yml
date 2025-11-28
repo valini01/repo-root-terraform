@@ -28,6 +28,13 @@ jobs:
       environment: lv
     secrets: inherit
 
+  destroy:
+    needs: apply
+    uses: ./.github/workflows/terraform-destroy.yml
+    with:
+      environment: lv
+    secrets: inherit  
+
   cleanup-feature-branch:
     name: "🧹 Delete Deployed Feature Branch"
     needs: apply
