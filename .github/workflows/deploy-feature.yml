@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - "features/shubhi/deleting"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Choose action'
+        required: true
+        type: choice
+        default: 'deploy'
 
 jobs:
   validate:
