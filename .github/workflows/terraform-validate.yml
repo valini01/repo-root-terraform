@@ -33,14 +33,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Generate GitHub App Token for Private Modules
+      - name: Generate GitHub App Token
         id: app-token
         uses: tibdex/github-app-token@v2
         with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-          installation-retrieval-mode: repository
-          installation-retrieval-payload: valini01/repo-modules-env 
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.PRIVATE_KEY }}
+          installation_retrieval_mode: repository
+          installation_retrieval_payload: ${{ github.repository }}
           revoke: true
 
       - name: Set GH_TOKEN
