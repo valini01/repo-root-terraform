@@ -60,7 +60,9 @@ jobs:
           private_key: ${{ secrets.PRIVATE_KEY }}
 
       - name: Set GH_TOKEN
-        run: echo "GH_TOKEN=${{ steps.app-token.outputs.token }}" >> $GITHUB_ENV
+        run: |
+          echo "GH_TOKEN=${{ steps.app-token.outputs.token }}" >> $GITHUB_ENV
+          echo "✅ Authenticated with GitHub App successfully"
 
       - name: Check and Create Staging Branch
         env:
