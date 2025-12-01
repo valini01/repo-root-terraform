@@ -11,7 +11,7 @@ jobs:
     if: github.event.pull_request.merged == true
     uses: ./.github/workflows/terraform-validate.yml
     with:
-      environment: nlv
+      environment: non-live
     secrets: inherit
 
   plan:
@@ -19,7 +19,7 @@ jobs:
     needs: validate
     uses: ./.github/workflows/terraform-plan.yml
     with:
-      environment: nlv
+      environment: non-live
     secrets: inherit
 
   apply:
@@ -27,14 +27,14 @@ jobs:
     needs: plan
     uses: ./.github/workflows/terraform-apply.yml
     with:
-      environment: nlv
+      environment: non-live
     secrets: inherit
 
   destroy:
     needs: apply
     uses: ./.github/workflows/terraform-destroy.yml
     with:
-      environment: lv
+      environment: non-live
     secrets: inherit    
 
   create-main-pr:
@@ -48,28 +48,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Authenticate GitHub App
-        env:
-          GH_APP_ID: ${{ secrets.APP_ID }}
-          GH_APP_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
-          GH_APP_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.PRIVATE_KEY }}
+          installation_retrieval_mode: repository
+          installation_retrieval_payload: ${{ github.repository }}
+          revoke: true
+
+      - name: Set GH_TOKEN
         run: |
-          # Generate JWT to authenticate as the GitHub App
-          header='{"alg":"RS256","typ":"JWT"}'
-          iat=$(($(date +%s) - 60))
-          exp=$(($(date +%s) + 540))
-          payload=$(jq -nc --arg iat "$iat" --arg exp "$exp" --arg iss "$GH_APP_ID" '{"iat":($iat|tonumber),"exp":($exp|tonumber),"iss":($iss|tonumber)}')
-          JWT=$(echo -n "${header}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')'.'$(echo -n "${payload}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-          SIGNATURE=$(echo -n "${JWT}" | openssl dgst -binary -sha256 -sign <(echo "$GH_APP_PRIVATE_KEY") | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-          JWT="${JWT}.${SIGNATURE}"
-
-          # Exchange JWT for an installation access token
-          ACCESS_TOKEN=$(curl -s -X POST \
-            -H "Authorization: Bearer $JWT" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/app/installations/$GH_APP_INSTALLATION_ID/access_tokens | jq -r .token)
-
-          echo "GH_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          echo "GH_TOKEN=${{ steps.app-token.outputs.token }}" >> $GITHUB_ENV
           echo "✅ Authenticated with GitHub App successfully"
 
       - name: Create Pull Request to Main
