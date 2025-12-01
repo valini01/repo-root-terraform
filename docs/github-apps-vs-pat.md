@@ -1,20 +1,8 @@
-# GitHub Apps vs PAT: Secure CI/CD with Azure SPN
+# GitHub Apps: Secure CI/CD with Azure SPN
 
-This guide explains why GitHub Apps are preferred over personal access tokens (PATs), and how our pipelines authenticate using a GitHub App alongside an Azure Service Principal (SPN).
+This doc focuses only on how GitHub Apps are used in CI/CD with an Azure Service Principal (SPN) for Terraform operations.
 
----
-## Why GitHub Apps Are Better Than PATs
-
-- Security: GitHub Apps use short‑lived installation tokens minted via signed JWTs; PATs are long‑lived static secrets tied to a user.
-- Least privilege: App permissions are scoped to repos/organizations; PATs inherit broad user scopes.
-- Revocation: Rotate private keys without user disruption; revoke installations granularly. PAT compromise disables a user’s access broadly.
-- Auditability: Actions performed by Apps are attributed to the App installation; PATs blur actor identity and use the user context.
-- Automation fit: Apps are designed for machine‑to‑machine access; PATs are for user‑initiated API calls.
-
----
-## Authentication Flow (High Level)
-
-Diagram: GitHub App token minting and use in Actions
+## GitHub App Authentication Flow
 
 ```mermaid
 sequenceDiagram
@@ -31,15 +19,15 @@ sequenceDiagram
 ```
 
 Key properties:
-- Tokens are short‑lived and scoped to the installation.
-- No user PAT stored; only the App private key is maintained as a secret.
+- Short‑lived, scoped installation tokens.
+- Only the App private key is stored as an encrypted secret.
 
 ---
-## Azure Authentication with SPN (Service Principal)
+## Azure Authentication (SPN)
 
-We use Azure SPN credentials to authenticate to Azure in CI jobs (login & Terraform). The SPN is independent of GitHub identities.
+CI logs into Azure using a Service Principal; Terraform then uses ARM tokens for backend state and resource provisioning.
 
-Diagram: Dual‑auth (GitHub App for code; SPN for Azure)
+Diagram: Dual‑auth (GitHub App for repo access; SPN for Azure)
 ```mermaid
 flowchart LR
   A[GitHub Actions Job] --> B[GitHub App]
@@ -51,111 +39,41 @@ flowchart LR
 ```
 
 Benefits:
-- Clear separation of concerns: GitHub App for GitHub; SPN for Azure.
-- Least privilege: App only needs repo read (and PR write when required); SPN is scoped to Azure subscription/resource group.
+- Separation of concerns (GitHub vs Azure).
+- Least privilege (scoped repo access + scoped Azure role assignments).
 
 ---
-## How Our Workflows Implement This
+## Workflow Usage
 
-We use these actions:
-- `tibdex/github-app-token@v2` to mint installation tokens from the App.
-- `azure/login@v1` to authenticate with the Azure SPN.
-- `hashicorp/setup-terraform@v3` for Terraform commands.
+Actions used:
+- `tibdex/github-app-token@v2` (mint installation token)
+- `azure/login@v1` (Azure SPN login)
+- `hashicorp/setup-terraform@v3` (Terraform CLI)
 
-Snippet (from reusable workflows):
-```yaml
-- name: Generate GitHub App Token
-  id: app-token
-  uses: tibdex/github-app-token@v2
-  with:
-    app_id: ${{ secrets.APP_ID }}
-    private_key: ${{ secrets.PRIVATE_KEY }}
-    installation_id: ${{ secrets.INSTALLATION_ID }}
+Steps:
+1. Generate installation token.
+2. Configure `git` for private module access.
+3. Azure login with SPN.
+4. Terraform init/plan/apply.
 
-- name: Configure Git for Private Terraform Modules
-  run: |
-    git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "https://github.com/"
-
-- name: Azure Login
-  uses: azure/login@v1
-  with:
-    creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
-```
-
----
-## Permissions and Secrets
-
-- GitHub App permissions:
-  - Repository contents: Read (for cloning and module fetch).
-  - Pull requests: Write (only if creating PRs from pipelines).
-- Secrets required in the repo/org:
-  - `APP_ID`, `PRIVATE_KEY`, `INSTALLATION_ID` for the GitHub App.
-  - `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_AD_TENANT_ID` for Azure SPN.
-
-Rotation:
-- Rotate App private key regularly; update `PRIVATE_KEY` secret.
-- Use Azure Key Vault or OIDC for SPN secret management where possible.
-
----
-## Threat Model Comparison
-
-| Aspect                | GitHub App                          | PAT                                     |
-|-----------------------|-------------------------------------|-----------------------------------------|
-| Token lifetime        | Short‑lived installation tokens      | Long‑lived until manually revoked       |
-| Scope                 | Installation‑scoped permissions      | User‑wide scopes                        |
-| Blast radius          | Single app/install                   | Entire user account repos/orgs          |
-| Rotation              | Key rotation, token auto‑expiry      | Manual rotation across all consumers    |
-| Audit logs            | App‑attributed with installation     | User‑attributed, mixed automation noise |
-| Best for              | CI/CD, bots, automation              | User scripts, admin tasks               |
-
----
-## End‑to‑End Flow (Terraform Plan/Apply)
-
+Diagram: CI Flow
 ```mermaid
 sequenceDiagram
   autonumber
-  participant Dev as Developer
-  participant GH as GitHub Actions
-  participant App as GitHub App
-  participant Az as Azure AD (SPN)
+  participant Actions as GitHub Actions
+  participant Repo as GitHub Repo/Modules
+  participant Azure as Azure AD (SPN)
   participant TF as Terraform
 
-  Dev->>GH: Merge PR
-  GH->>App: Generate JWT & Installation Token
-  GH->>GH: Configure git to use App token
-  GH->>Az: azure/login (SPN creds) -> ARM env vars
-  GH->>TF: terraform init (Azure backend)
-  GH->>TF: terraform plan/apply with env var-file
-  TF-->>Az: Use ARM tokens to manage resources
+  Actions->>Repo: Access with short‑lived token
+  Actions->>Azure: Login (Service Principal)
+  Azure-->>Actions: ARM tokens
+  Actions->>TF: init/plan/apply (Azure backend)
+  TF-->>Azure: Manage state & resources
 ```
 
----
-## Recommended Hardening
+Secrets required:
+- `APP_ID`, `PRIVATE_KEY`, `INSTALLATION_ID` (GitHub App)
+- Azure SPN: `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_SUBSCRIPTION_ID`, `AZURE_AD_TENANT_ID`
 
-- Use environment protection rules for `apply`/`destroy` jobs with approvals.
-- Scope SPN to exact subscription/resource group and enforce least privilege (e.g., `Contributor` on RG or custom role).
-- Prefer OIDC‑based Azure federated credentials over client secrets when possible (removes stored secrets; uses ephemeral tokens).
-- Keep the GitHub App permissions minimal; split responsibilities across multiple Apps if necessary.
-- Store App private key securely (e.g., Actions Encrypted Secret; rotate periodically).
-
----
-## Diagram: OIDC Upgrade Path (Optional)
-
-```mermaid
-flowchart LR
-  R[GitHub Actions Runner] -- OIDC Token --> F[Azure AD Federated Credential]
-  F --> T[Short‑lived ARM Token]
-  R -->|Repo Access| A[GitHub App Installation Token]
-  T --> P[Terraform / Azure SDK]
-  P --> Az[Azure Resources]
-```
-
-This replaces the SPN client secret with a trust relationship, improving secret hygiene.
-
----
-## References
-
-- GitHub: About authentication with a GitHub App
-- GitHub Actions: OIDC with cloud providers
-- Azure: Create service principals and federated credentials
-- HashiCorp: Terraform AzureRM provider authentication options
+End of doc.

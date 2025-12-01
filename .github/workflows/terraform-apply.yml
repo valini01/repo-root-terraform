@@ -9,20 +9,24 @@ on:
     secrets:
       AZURE_AD_CLIENT_ID:
         required: true
-      AZURE_AD_CLIENT_SECRET:
-        required: true
       AZURE_SUBSCRIPTION_ID:
         required: true
       AZURE_AD_TENANT_ID:
         required: true
-      GH_PAT:
+      APP_ID:
+        required: true
+      PRIVATE_KEY:
+        required: true
+      INSTALLATION_ID:
         required: true
 
 jobs:
   apply:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}-apply
-    environment: ${{ inputs.environment }}-apply
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout code
@@ -44,9 +48,11 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
+          client-id: ${{ secrets.AZURE_AD_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_AD_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Initialize Terraform Backend
         run: |
@@ -56,27 +62,14 @@ jobs:
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
             -backend-config="key=${{ inputs.environment }}.tfstate" \
-            -backend-config="key=${{ inputs.environment }}.tfstate" \
             -backend-config="use_azuread_auth=true"
 
       - name: Terraform Plan
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
         run: |
           terraform plan -input=false \
-            -var="environment_name=${{ inputs.environment }}" \
-            -var-file="environments/${{ inputs.environment }}/config.yaml"
+            -var="environment_name=${{ inputs.environment }}"
 
       - name: Terraform Apply
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
         run: |
           terraform apply -auto-approve -input=false \
-            -var="environment_name=${{ inputs.environment }}" \
-            -var-file="environments/${{ inputs.environment }}/config.yaml"
+            -var="environment_name=${{ inputs.environment }}"

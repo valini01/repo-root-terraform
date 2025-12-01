@@ -9,19 +9,24 @@ on:
     secrets:
       AZURE_AD_CLIENT_ID:
         required: true
-      AZURE_AD_CLIENT_SECRET:
-        required: true
       AZURE_SUBSCRIPTION_ID:
         required: true
       AZURE_AD_TENANT_ID:
         required: true
-      GH_PAT:
+      APP_ID:
+        required: true
+      PRIVATE_KEY:
+        required: true
+      INSTALLATION_ID:
         required: true
 
 jobs:
   destroy:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}-destroy  # 🚨 Approval Gate for Destroy
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout code
@@ -43,13 +48,13 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: '>= 1.5, < 2.0.0'
 
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}'
+          client-id: ${{ secrets.AZURE_AD_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_AD_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Initialize Terraform Backend
         run: |
@@ -62,17 +67,11 @@ jobs:
             -backend-config="use_azuread_auth=true"
 
       - name: Terraform Plan (Destroy)
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-        run: terraform plan -destroy -input=false -var="environment_name=${{ inputs.environment }}"
+        run: |
+          terraform plan -destroy -input=false \
+            -var="environment_name=${{ inputs.environment }}"
 
       - name: Terraform Destroy
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-        run: terraform destroy -auto-approve -input=false -var="environment_name=${{ inputs.environment }}"
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -var="environment_name=${{ inputs.environment }}"
