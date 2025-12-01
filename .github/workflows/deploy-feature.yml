@@ -1,9 +1,9 @@
 name: "🧪 Deploy LAB for Feature Branch"
 
 on:
-  push:
-    branches:
-      - "features/shubhi/deleting"
+  # push:
+  #   branches:
+  #     - "features/shubhi/deleting"
   workflow_dispatch:
     inputs:
       action:
