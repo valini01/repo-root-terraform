@@ -27,8 +27,8 @@ module "resource-group" {
 # Key Vault (conditionall)
 # --------------------------
 module "key-vault" {
-  source              = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
-  count               = local.env.resources.key_vault.enabled ? 1 : 0
+  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
+  count  = local.env.resources.key_vault.enabled ? 1 : 0
 
   name                = module.naming.standard["key-vault"]
   resource_group_name = module.resource-group.name
@@ -40,13 +40,13 @@ module "key-vault" {
 # Storage Account (conditional)
 # --------------------------
 module "storage-account" {
-  source              = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
-  count               = local.env.resources.storage_account.enabled ? 1 : 0
+  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
+  count  = local.env.resources.storage_account.enabled ? 1 : 0
 
-  name                           = module.naming.standard["storage-account"]
-  resource_group_name            = module.resource-group.name
-  location                       = local.env.location
-  shared_access_key_enabled      = false
+  name                            = module.naming.standard["storage-account"]
+  resource_group_name             = module.resource-group.name
+  location                        = local.env.location
+  shared_access_key_enabled       = false
   default_to_oauth_authentication = true
 }
 
