@@ -6,6 +6,10 @@ on:
     branches:
       - staging
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   validate:
     if: github.event.pull_request.merged == true

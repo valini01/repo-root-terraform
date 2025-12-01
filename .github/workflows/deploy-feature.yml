@@ -6,6 +6,10 @@ on:
       - "features/shubhi/final"
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   validate:
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch') }}
