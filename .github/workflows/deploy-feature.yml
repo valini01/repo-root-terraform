@@ -5,6 +5,10 @@ on:
     branches:
       - "features/valini/deleting"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   validate:
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy') }}
