@@ -51,7 +51,7 @@ module "storage-account" {
 }
 
 module "naming" {
-  source = "../repo-modules-env/modules/azure-naming-standard-tfmodule"
+  source = "git::https://github.com/valini01/repo-modules-env.git//modules/azure-naming-standard-tfmodule?ref=main"
 
   # Required inputs from YAML
   location       = local.env.location
