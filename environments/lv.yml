@@ -4,7 +4,7 @@ location: "East US"
 resources:
   resource_group:
     enabled: true
-    name: "rg-live-demo2"
+    name: "rg-live-demo3"
 
   storage_account:
     enabled: false
