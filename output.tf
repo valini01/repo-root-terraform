@@ -22,10 +22,10 @@ output "containerapp_name" {
   description = "Container App name (null when disabled)."
 }
 
-# output "aks_name" {
-#   value       = local.env.resources.aks.enabled ? module.aks[0].name : null
-#   description = "AKS cluster name (null when disabled)."
-# }
+output "aks_name" {
+  value       = local.env.resources.aks.enabled ? module.aks[0].name : null
+  description = "AKS cluster name (null when disabled)."
+}
 
 output "postgresql_name" {
   value       = local.env.resources.postgresql.enabled ? module.postgresql[0].name : null

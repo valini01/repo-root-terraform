@@ -2,10 +2,13 @@
 environment: non-live
 location: "East US"
 
-application_id: "001"
+############################################
+# Naming Context (consumed by naming module)
+############################################
+application_id: "0010111"
 context: "app"
-seq: "0001"
-routing_domain: "1301"
+seq: "00111"
+routing_domain: "13011"
 local_market: "uk"
 local_market_shortcut: "uk"
 key_func: "cmk01"
@@ -23,6 +26,9 @@ agwrrl_type: ""
 agwbs_type: ""
 agwls_port: ""
 
+############################################
+# Resource Toggles (enable per environment)
+############################################
 resources:
   resource_group:
     enabled: true
@@ -53,6 +59,9 @@ resources:
   ai_foundry:
     enabled: false
 
+############################################
+# Module Settings
+############################################
 api_management:
   publisher_name: "Contoso"
   publisher_email: "apim-admin@contoso.com"
