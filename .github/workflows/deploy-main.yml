@@ -1,4 +1,4 @@
-name: "🏭 Deploy Production (Live LV)"
+name: "Deploy Production (Live LV)"
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write  # Changed from read to write for tagging and version update
 
 jobs:
   validate:
@@ -40,12 +40,10 @@ jobs:
     secrets: inherit
 
   cleanup-feature-branch:
-    name: "🧹 Delete Deployed Feature Branch"
+    name: "Delete Deployed Feature Branch"
     needs: destroy
     if: success() && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repository
@@ -64,9 +62,90 @@ jobs:
             exit 0
           fi
           
-          echo "🔍 Found feature branch: $FEATURE_BRANCH"
-          echo "🧹 Deleting remote branch: $FEATURE_BRANCH"
+          echo "Found feature branch: $FEATURE_BRANCH"
+          echo "Deleting remote branch: $FEATURE_BRANCH"
           
           gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/$FEATURE_BRANCH" || echo "⚠️ Could not delete $FEATURE_BRANCH (may already be deleted)"
           
           echo "✅ Cleanup complete — staging and main remain."
+
+  release-version:
+    name: "Create Release Version Tag"
+    needs: cleanup-feature-branch
+    if: success() && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Compute next version
+        id: compute_version
+        run: |
+          if [ ! -f version.json ]; then
+            echo '{"module_version":"v0.0.0"}' > version.json
+          fi
+          
+          CURRENT=$(jq -r '.module_version' version.json)
+          STRIPPED=$(echo "$CURRENT" | sed 's/^v//')
+          NEW=$(echo "$STRIPPED" | awk -F. -v OFS=. '{$NF += 1 ; print}')
+          NEW_TAG="v${NEW}"
+          
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "📦 Next version: $NEW_TAG (current: $CURRENT)"
+
+      - name: Create annotated git tag
+        env:
+          NEW_TAG: ${{ env.NEW_TAG }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          
+          echo "Creating tag: $NEW_TAG"
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG - Production deployment completed"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" "$NEW_TAG"
+          
+          echo "Tag $NEW_TAG created and pushed"
+
+      - name: Update version.json in main
+        env:
+          NEW_TAG: ${{ env.NEW_TAG }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Pull latest main to avoid conflicts
+          git pull origin main
+          
+          jq -n --arg v "$NEW_TAG" '{"module_version":$v}' > version.json
+          git add version.json
+          
+          if git commit -m "chore: bump version to $NEW_TAG [skip ci]"; then
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" main
+            echo "✅ version.json updated to $NEW_TAG"
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_TAG: ${{ env.NEW_TAG }}
+        run: |
+          gh release create "$NEW_TAG" \
+            --title "Release $NEW_TAG" \
+            --notes "Production deployment completed successfully
+          
+          **Deployed to:** Live (LV) environment
+          **Merged PR:** #${{ github.event.pull_request.number }}
+          **Commit:** ${{ github.sha }}
+          
+          This release was automatically created after successful production deployment." \
+            --repo ${{ github.repository }}
+          
+          echo "✅ GitHub Release created"

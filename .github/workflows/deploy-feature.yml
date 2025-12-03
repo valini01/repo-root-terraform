@@ -1,4 +1,4 @@
-name: "🧪 Deploy LAB for Feature Branch"
+name: "Deploy LAB for Feature Branch"
 
 on:
   push:
@@ -100,7 +100,7 @@ jobs:
             gh pr create \
               --base staging \
               --head ${{ github.ref_name }} \
-              --title "🚀 Promote ${{ github.ref_name }} → Staging" \
+              --title "Promote ${{ github.ref_name }} → Staging" \
               --body "## LAB Deployment Completed Successfully!
           
           **Source Branch:** \`${{ github.ref_name }}\`  

@@ -1,4 +1,4 @@
-name: "🔄 Deploy Staging (NLV Environment)"
+name: "Deploy Staging (NLV Environment)"
 
 on:
   pull_request:
@@ -78,8 +78,8 @@ jobs:
             gh pr create \
               --base main \
               --head staging \
-              --title "🚀 Deploy NLV to Production (LV)" \
-              --body "### 🎯 Staging to Production Promotion
+              --title "Deploy NLV to Production (LV)" \
+              --body "### Staging to Production Promotion
 
           **Source Environment:** NLV (Staging)
           **Target Environment:** LV (Production)
@@ -96,5 +96,5 @@ jobs:
           **⚠️ This will deploy to PRODUCTION. Ensure all validations are complete.**"
             echo "✅ Created PR from staging to main"
           else
-            echo "ℹ️ PR #$EXISTING_PR already exists from staging to main"
+            echo "PR #$EXISTING_PR already exists from staging to main"
           fi
