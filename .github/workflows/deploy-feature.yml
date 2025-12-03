@@ -3,7 +3,7 @@ name: "🧪 Deploy LAB for Feature Branch"
 on:
   push:
     branches:
-      - "features/valini/deleting"
+      - "features/**"
 
 permissions:
   id-token: write
