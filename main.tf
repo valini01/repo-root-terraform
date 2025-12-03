@@ -45,8 +45,8 @@ module "storage-account" {
 }
 
 module "naming" {
-  //source = "git::https://github.com/valini01/repo-modules-env.git//modules/azure-naming-standard-tfmodule?ref=main"
-  source = "../repo-modules-env/modules/azure-naming-standard-tfmodule"
+  source = "git::https://github.com/valini01/repo-modules-env.git//modules/azure-naming-standard-tfmodule?ref=main"
+  
 
   # Required inputs from YAML
   location       = local.env.location
@@ -106,17 +106,17 @@ module "containerapp" {
 # --------------------------
 # AKS (conditional)
 # --------------------------
-# module "aks" {
-#   source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-containerservice-managedcluster-main?ref=main"
-#   count  = local.env.resources.aks.enabled ? 1 : 0
+module "aks" {
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-containerservice-managedcluster-main?ref=main"
+  count  = local.env.resources.aks.enabled ? 1 : 0
 
-#   name                = module.naming.standard["aks"]
-#   resource_group_name = module.resource-group.name
-#   location            = local.env.location
+  name                = module.naming.standard["aks"]
+  resource_group_name = module.resource-group.name
+  location            = local.env.location
 
-#   default_node_pool = local.env.aks.default_node_pool
-#   dns_prefix = "${module.naming.standard["aks"]}-dns"
-# }
+  default_node_pool = local.env.aks.default_node_pool
+  dns_prefix = "${module.naming.standard["aks"]}-dns"
+}
 
 # --------------------------
 # PostgreSQL Flexible Server (conditional)
