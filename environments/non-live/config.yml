@@ -1,0 +1,67 @@
+environment: non-live
+
+location: "East US"
+
+application_id: "001012"
+context: "app2"
+seq: "0012"
+routing_domain: "1302"
+local_market: "uk"
+local_market_shortcut: "uk"
+key_func: "cmk012"
+security_zone: "sec012"
+subnet_cidr: "10.0.0.0/24"
+vnet_name_suffix: ""
+hub: ""
+data_disk_inc: "1"
+pip_suffix: ""
+fe_type: ""
+ip_version: ""
+agwbe_port: ""
+agwhp_type: ""
+agwrrl_type: ""
+agwbs_type: ""
+agwls_port: ""
+
+resources:
+  resource_group:
+    enabled: true
+
+  key_vault:
+    enabled: false
+
+  storage_account:
+    enabled: false
+
+  api_management:
+    enabled: false
+
+  containerapp:
+    enabled: false
+
+  aks:
+    enabled: false
+
+  postgresql:
+    enabled: false
+
+  mysql:
+    enabled: false
+
+  cosmosdb:
+    enabled: false
+
+  search:
+    enabled: false
+
+  sql_server:
+    enabled: false
+
+  sql_managed_instance:
+    enabled: false
+
+  ml_workspace:
+    enabled: false
+
+  ai_foundry:
+    enabled: false

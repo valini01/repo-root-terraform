@@ -1,10 +1,14 @@
-name: "🧪 Deploy LAB for Feature Branch"
+name: "Deploy LAB for Feature Branch"
 
 on:
-  # push:
-  #   branches:
-  #     - "features/shubhi/deleting"
+  push:
+    branches:
+      - "features/shubhi/final"
   workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   validate:
@@ -96,7 +100,7 @@ jobs:
             gh pr create \
               --base staging \
               --head ${{ github.ref_name }} \
-              --title "🚀 Promote ${{ github.ref_name }} → Staging" \
+              --title "Promote ${{ github.ref_name }} → Staging" \
               --body "## LAB Deployment Completed Successfully!
           
           **Source Branch:** \`${{ github.ref_name }}\`  
