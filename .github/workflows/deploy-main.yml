@@ -1,4 +1,4 @@
-name: "🏭 Deploy Production (Live LV)"
+name: "Deploy Production (Live LV)"
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write  # Changed from read to write for tagging and version update
 
 jobs:
   validate:
@@ -32,59 +32,120 @@ jobs:
       environment: live
     secrets: inherit
 
-  cleanup-feature-branch:
-    name: "🧹 Delete Deployed Feature Branch"
+  destroy:
     needs: apply
-    if: success()
+    uses: ./.github/workflows/terraform-destroy.yml
+    with:
+      environment: live
+    secrets: inherit
+
+  cleanup-feature-branch:
+    name: "Delete Deployed Feature Branch"
+    needs: destroy
+    if: success() && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Identify and delete merged feature branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the branch from the most recent merged PR to staging
+          echo "🔍 Looking for feature branch that was merged to staging..."
+          FEATURE_BRANCH=$(gh pr list --repo ${{ github.repository }} --state merged --base staging --limit 1 --json headRefName --jq '.[0].headRefName' || echo "")
+          
+          if [ -z "$FEATURE_BRANCH" ]; then
+            echo "⚠️ No feature branch found in recent staging merges"
+            exit 0
+          fi
+          
+          echo "Found feature branch: $FEATURE_BRANCH"
+          echo "Deleting remote branch: $FEATURE_BRANCH"
+          
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/$FEATURE_BRANCH" || echo "⚠️ Could not delete $FEATURE_BRANCH (may already be deleted)"
+          
+          echo "✅ Cleanup complete — staging and main remain."
+
+  release-version:
+    name: "Create Release Version Tag"
+    needs: cleanup-feature-branch
+    if: success() && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo with full history
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Authenticate GitHub App
-        id: auth
-        env:
-          GH_APP_ID: ${{ secrets.APP_ID }}
-          GH_APP_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
-          GH_APP_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Compute next version
+        id: compute_version
         run: |
-          # Generate JWT to authenticate as the GitHub App
-          header='{"alg":"RS256","typ":"JWT"}'
-          iat=$(($(date +%s) - 60))
-          exp=$(($(date +%s) + 540))
-          payload=$(jq -nc --arg iat "$iat" --arg exp "$exp" --arg iss "$GH_APP_ID" '{"iat":($iat|tonumber),"exp":($exp|tonumber),"iss":($iss|tonumber)}')
-          JWT=$(echo -n "${header}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')'.'$(echo -n "${payload}" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-          SIGNATURE=$(echo -n "${JWT}" | openssl dgst -binary -sha256 -sign <(echo "$GH_APP_PRIVATE_KEY") | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-          JWT="${JWT}.${SIGNATURE}"
+          if [ ! -f version.json ]; then
+            echo '{"module_version":"v0.0.0"}' > version.json
+          fi
+          
+          CURRENT=$(jq -r '.module_version' version.json)
+          STRIPPED=$(echo "$CURRENT" | sed 's/^v//')
+          NEW=$(echo "$STRIPPED" | awk -F. -v OFS=. '{$NF += 1 ; print}')
+          NEW_TAG="v${NEW}"
+          
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "📦 Next version: $NEW_TAG (current: $CURRENT)"
 
-          # Exchange JWT for installation access token
-          ACCESS_TOKEN=$(curl -s -X POST \
-            -H "Authorization: Bearer $JWT" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/app/installations/$GH_APP_INSTALLATION_ID/access_tokens | jq -r .token)
-
-          echo "token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
-          echo "✅ Authenticated with GitHub App successfully"
-
-      - name: Identify merged feature branch
-        id: find_branch
+      - name: Create annotated git tag
         env:
-          GH_TOKEN: ${{ steps.auth.outputs.token }}
+          NEW_TAG: ${{ env.NEW_TAG }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get the branch from the most recent merged PR to staging
-          FEATURE_BRANCH=$(gh pr list --repo ${{ github.repository }} --state merged --base staging --limit 1 --json headRefName --jq '.[0].headRefName' || echo "")
-          echo "feature_branch=$FEATURE_BRANCH" >> $GITHUB_OUTPUT
-          echo "🔍 Found merged feature branch: $FEATURE_BRANCH"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          
+          echo "Creating tag: $NEW_TAG"
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG - Production deployment completed"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" "$NEW_TAG"
+          
+          echo "Tag $NEW_TAG created and pushed"
 
-      - name: Delete remote feature branch
-        if: steps.find_branch.outputs.feature_branch != ''
+      - name: Update version.json in main
         env:
-          GH_TOKEN: ${{ steps.auth.outputs.token }}
+          NEW_TAG: ${{ env.NEW_TAG }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH=${{ steps.find_branch.outputs.feature_branch }}
-          echo "🧹 Deleting remote branch: $BRANCH"
-          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} --delete $BRANCH || echo "⚠️ Could not delete $BRANCH"
-          echo "✅ Cleanup complete — staging and main remain."
+          # Pull latest main to avoid conflicts
+          git pull origin main
+          
+          jq -n --arg v "$NEW_TAG" '{"module_version":$v}' > version.json
+          git add version.json
+          
+          if git commit -m "chore: bump version to $NEW_TAG [skip ci]"; then
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" main
+            echo "✅ version.json updated to $NEW_TAG"
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_TAG: ${{ env.NEW_TAG }}
+        run: |
+          gh release create "$NEW_TAG" \
+            --title "Release $NEW_TAG" \
+            --notes "Production deployment completed successfully
+          
+          **Deployed to:** Live (LV) environment
+          **Merged PR:** #${{ github.event.pull_request.number }}
+          **Commit:** ${{ github.sha }}
+          
+          This release was automatically created after successful production deployment." \
+            --repo ${{ github.repository }}
+          
+          echo "✅ GitHub Release created"

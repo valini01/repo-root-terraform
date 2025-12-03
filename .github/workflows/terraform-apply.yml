@@ -9,24 +9,19 @@ on:
     secrets:
       AZURE_AD_CLIENT_ID:
         required: true
+      # AZURE_AD_CLIENT_SECRET:
+      #   required: true
       AZURE_SUBSCRIPTION_ID:
         required: true
       AZURE_AD_TENANT_ID:
         required: true
-      APP_ID:
-        required: true
-      PRIVATE_KEY:
-        required: true
-      INSTALLATION_ID:
+      GH_PAT:
         required: true
 
 jobs:
   apply:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}-apply
-    permissions:
-      id-token: write
-      contents: read
+    environment: ${{ inputs.environment }}-apply   # <-- GitHub Approval Gate
 
     steps:
       - name: Checkout code
@@ -38,7 +33,14 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.PRIVATE_KEY }}
-          installation_id: ${{ secrets.INSTALLATION_ID }}
+          installation_retrieval_mode: repository
+          installation_retrieval_payload: ${{ github.repository }}
+          revoke: true
+
+      - name: Set GH_TOKEN
+        run: |
+          echo "GH_TOKEN=${{ steps.app-token.outputs.token }}" >> $GITHUB_ENV
+          echo "✅ Authenticated with GitHub App successfully"
 
       - name: Configure Git for Private Terraform Modules
         run: |
@@ -47,29 +49,46 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Azure Login
-        uses: azure/login@v2
+      - name: Azure Login (OIDC)
+        uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_AD_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_AD_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # - name: Azure Login (Secret-based - OLD)
+      #   uses: azure/login@v1
+      #   with:
+      #     creds: '{"clientId":"${{ secrets.AZURE_AD_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_AD_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_AD_TENANT_ID }}"}''
+
+      # - name: Terraform Init
+      #   run: terraform init
+
+      # 🟩 UPDATED Terraform Init with backend config
       - name: Initialize Terraform Backend
         run: |
-          echo "🔧 Initializing Terraform backend..."
+          echo "Initializing Terraform backend..."
           terraform init \
             -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
-            -backend-config="key=${{ inputs.environment }}.tfstate" \
+            -backend-config="key=${{ inputs.environment }}.tfstate"\
             -backend-config="use_azuread_auth=true"
 
       - name: Terraform Plan
-        run: |
-          terraform plan -input=false \
-            -var="environment_name=${{ inputs.environment }}"
-
+        env:
+          ARM_USE_OIDC: true
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+          # ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+        run: terraform plan -input=false -var="environment_name=${{ inputs.environment }}"
+       
       - name: Terraform Apply
-        run: |
-          terraform apply -auto-approve -input=false \
-            -var="environment_name=${{ inputs.environment }}"
+        env:
+          ARM_USE_OIDC: true
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+          # ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+        run: terraform apply -auto-approve -input=false -var="environment_name=${{ inputs.environment }}"
