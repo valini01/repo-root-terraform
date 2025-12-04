@@ -33,7 +33,7 @@ resources:
   resource_group:
     enabled: true
   key_vault:
-    enabled: true
+    enabled: false
   storage_account:
     enabled: false
   api_management:

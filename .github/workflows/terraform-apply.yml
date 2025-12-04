@@ -78,14 +78,14 @@ jobs:
             -backend-config="key=${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}.tfstate" \
             -backend-config="use_azuread_auth=true"
 
-      - name: Terraform Plan
-        env:
-          ARM_USE_OIDC: true
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-          # ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-        run: terraform plan -input=false -var="environment_name=${{ inputs.environment }}"
+      # - name: Terraform Plan
+      #   env:
+      #     ARM_USE_OIDC: true
+      #     ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      #     ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      #     ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      #     # ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      #   run: terraform plan -input=false -var="environment_name=${{ inputs.environment }}"
        
       - name: Terraform Apply
         env:

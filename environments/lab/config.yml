@@ -7,7 +7,7 @@ location: "East US"
 ############################################
 # Naming Context (consumed by naming module)
 ############################################
-application_id: "00101"
+application_id: "0011101"
 context: "app"
 seq: "001"
 routing_domain: "130"
@@ -35,7 +35,7 @@ resources:
   resource_group:
     enabled: true
   key_vault:
-    enabled: true
+    enabled: false
   storage_account:
     enabled: false
   api_management:
