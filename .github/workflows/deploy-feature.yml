@@ -3,7 +3,7 @@ name: "Deploy LAB for Feature Branch"
 on:
   push:
     branches:
-      - "features/terraform-root-file/branching"
+      - "features/shubhi/final"
   workflow_dispatch:
 
 permissions:
