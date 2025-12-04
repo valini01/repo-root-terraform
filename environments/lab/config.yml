@@ -1,8 +1,13 @@
+############################################
+# Environment: LAB
+############################################
 environment: lab
-
 location: "East US"
 
-application_id: "00101"
+############################################
+# Naming Context (consumed by naming module)
+############################################
+application_id: "0011101"
 context: "app"
 seq: "001"
 routing_domain: "130"
@@ -23,46 +28,71 @@ agwrrl_type: ""
 agwbs_type: ""
 agwls_port: ""
 
+############################################
+# Resource Toggles (enable per environment)
+############################################
 resources:
   resource_group:
     enabled: true
-
   key_vault:
     enabled: false
-
   storage_account:
     enabled: false
-
   api_management:
     enabled: false
-
   containerapp:
     enabled: false
-
   aks:
     enabled: false
-
   postgresql:
     enabled: false
-
   mysql:
     enabled: false
-
   cosmosdb:
     enabled: false
-
   search:
     enabled: false
-
   sql_server:
     enabled: false
-
   sql_managed_instance:
     enabled: false
-
   ml_workspace:
     enabled: false
-
   ai_foundry:
     enabled: false
 
+############################################
+# Module Settings
+############################################
+api_management:
+  publisher_name: "Contoso"
+  publisher_email: "apim-admin@contoso.com"
+
+aks:
+  default_node_pool:
+    name: "system"
+    vm_size: "Standard_DS2_v2"
+    node_count: 1
+    mode: "System"
+
+containerapp:
+  environment_resource_id: "/subscriptions/<subscription-id>/resourceGroups/<rg-name>/providers/Microsoft.App/managedEnvironments/<env-name>"
+  template:
+    containers:
+      - name: app
+        image: mcr.microsoft.com/azuredocs/containerapps-helloworld:latest
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+    scale:
+      minReplicas: 1
+      maxReplicas: 1
+
+sql_managed_instance:
+  vcores: 4
+  storage_size_in_gb: 32
+  subnet_id: "/subscriptions/<subscription-id>/resourceGroups/<rg-name>/providers/Microsoft.Network/virtualNetworks/<vnet-name>/subnets/<subnet-name>"
+  administrator_login: "sqladmin"
+  administrator_login_password: "CHANGE_ME_USE_KEY_VAULT"
+  license_type: "BasePrice"
+  sku_name: "GP_Gen5"
