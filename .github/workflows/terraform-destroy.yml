@@ -8,7 +8,7 @@ on:
         type: string
     secrets:
       AZURE_AD_CLIENT_ID:
-        required: true
+        requ
       # AZURE_AD_CLIENT_SECRET:
       #   required: true
       AZURE_SUBSCRIPTION_ID:
@@ -49,7 +49,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: '>= 1.5, < 2.0.0'
+          terraform_version: 1.12.0
 
       - name: Azure Login (OIDC)
         uses: azure/login@v1
@@ -73,8 +73,7 @@ jobs:
           terraform init \
             -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
-            -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
-            -backend-config="key=${{ env.ORG }}-${{ inputs.environment }}-${{ env.REGION }}-${{ env.SVC }}-${{ env.INSTANCE }}.tfstate" \
+            -backend-config-backend-config="key=${{ env.ORG }}-${{ inputs.environment }}-${{ env.REGION }}-${{ env.SVC }}-${{ env.INSTANCE }}.tfstate" \          -backend-config="key=${{ inputs.environment }}.tfstate"\
             -backend-config="use_azuread_auth=true"
 
       - name: Terraform Plan (Destroy)
@@ -93,4 +92,5 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
           ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
           # ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-        run: terraform destroy -auto-approve -input=false -var="environment_name=${{ inputs.environment }}"
+        run: terraform destroy -auto-approve -input=false -var="environment_name=${{ inputs.environment }}"nput=false \
+            -var="environment_name=${{ inputs.environment }}"
