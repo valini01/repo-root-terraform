@@ -19,12 +19,12 @@ variable "tags" {
   }
   validation {
     condition = alltrue([
-      length(trim(var.tags["costCenter"])) > 0,
-      length(trim(var.tags["owner"])) > 0,
+      length(trimspace(var.tags["costCenter"])) > 0,
+      length(trimspace(var.tags["owner"])) > 0,
       contains(["Public", "Internal", "Confidential", "Restricted"], var.tags["dataClassification"]),
-      length(trim(var.tags["managedBy"])) > 0,
-      length(trim(var.tags["appId"])) > 0,
-      length(trim(var.tags["service"])) > 0,
+      length(trimspace(var.tags["managedBy"])) > 0,
+      length(trimspace(var.tags["appId"])) > 0,
+      length(trimspace(var.tags["service"])) > 0,
     ])
     error_message = "Tag values must be non-empty. dataClassification must be one of: Public, Internal, Confidential, Restricted."
   }
