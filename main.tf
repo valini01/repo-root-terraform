@@ -12,6 +12,17 @@ locals {
   env = yamldecode(
     file("${path.root}/environments/${var.environment_name}/config.yml")
   )
+  version = jsondecode(file("${path.root}/version.json")).module_version
+  tags = merge(
+    try(local.env.tags, {}),
+    var.tags,
+    {
+      environment = var.environment_name
+      version     = local.version
+      appId       = try(local.env.application_id, try(local.env.tags.appId, null))
+      service     = try(local.env.context, try(local.env.tags.service, null))
+    }
+  )
 }
 
 # --------------------------
@@ -23,6 +34,7 @@ module "resource-group" {
 
   name     = module.naming.standard["resource-group"]
   location = local.env.location
+  tags     = local.tags
 }
 
 module "key-vault" {
@@ -34,6 +46,7 @@ module "key-vault" {
   resource_group_name = module.resource-group.name
   location            = local.env.location
   tenant_id           = data.azurerm_client_config.current.tenant_id
+  tags                = local.tags
 }
 
 module "storage-account" {
@@ -46,6 +59,7 @@ module "storage-account" {
   location                        = local.env.location
   shared_access_key_enabled       = false
   default_to_oauth_authentication = true
+  tags                            = local.tags
 }
 
 module "naming" {
@@ -92,6 +106,7 @@ module "api-management" {
   location            = local.env.location
   publisher_name      = local.env.api_management.publisher_name
   publisher_email     = local.env.api_management.publisher_email
+  tags                = local.tags
 }
 
 # --------------------------
@@ -107,6 +122,7 @@ module "containerapp" {
   location                              = local.env.location
   container_app_environment_resource_id = local.env.containerapp.environment_resource_id
   template                              = local.env.containerapp.template
+  tags                                  = local.tags
 }
 
 # --------------------------
@@ -123,6 +139,7 @@ module "aks" {
 
   default_node_pool = local.env.aks.default_node_pool
   dns_prefix        = "${module.naming.standard["aks"]}-dns"
+  tags              = local.tags
 }
 
 # --------------------------
@@ -136,6 +153,7 @@ module "postgresql" {
   name                = module.naming.standard["postgresql"]
   resource_group_name = module.resource-group.name
   location            = local.env.location
+  tags                = local.tags
 }
 
 # --------------------------
@@ -150,6 +168,7 @@ module "mysql" {
   name                = module.naming.standard["mysql"]
   resource_group_name = module.resource-group.name
   location            = local.env.location
+  tags                = local.tags
 }
 
 # --------------------------
@@ -163,6 +182,7 @@ module "cosmosdb" {
   name                = module.naming.standard["cosmosdb"]
   resource_group_name = module.resource-group.name
   location            = local.env.location
+  tags                = local.tags
 }
 
 # --------------------------
@@ -177,6 +197,7 @@ module "search" {
   name                = module.naming.standard["search"]
   resource_group_name = module.resource-group.name
   location            = local.env.location
+  tags                = local.tags
 }
 
 # --------------------------
@@ -191,6 +212,7 @@ module "sql-server" {
   resource_group_name = module.resource-group.name
   location            = local.env.location
   server_version      = local.env.sql_server.server_version
+  tags                = local.tags
 }
 
 # --------------------------
@@ -212,6 +234,7 @@ module "sql-managed-instance" {
   administrator_login_password = local.env.sql_managed_instance.administrator_login_password
   license_type                 = local.env.sql_managed_instance.license_type
   sku_name                     = local.env.sql_managed_instance.sku_name
+  tags                         = local.tags
 }
 
 # --------------------------
@@ -225,6 +248,7 @@ module "ml-workspace" {
   name                = module.naming.standard["ml-workspace"]
   resource_group_name = module.resource-group.name
   location            = local.env.location
+  tags                = local.tags
 }
 
 # --------------------------
@@ -238,4 +262,5 @@ module "ai-foundry" {
   base_name                  = module.naming.standard["ai-foundry"]
   resource_group_resource_id = module.resource-group.resource_id
   location                   = local.env.location
+  tags                       = local.tags
 }

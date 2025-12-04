@@ -60,6 +60,17 @@ resources:
     enabled: false
 
 ############################################
+# Standard Tags (used for governance)
+############################################
+tags:
+  costCenter: "CC9999"
+  owner: "prod-team@example.com"
+  dataClassification: "Confidential"   # Public | Internal | Confidential | Restricted
+  managedBy: "Terraform"
+  appId: "0011101"                      # defaults to application_id if omitted
+  service: "app"                        # defaults to context if omitted
+
+############################################
 # Module Settings
 ############################################
 api_management:

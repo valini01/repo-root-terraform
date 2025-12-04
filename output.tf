@@ -66,3 +66,8 @@ output "ai_foundry_name" {
   value       = local.env.resources.ai_foundry.enabled ? module.ai-foundry[0].name : null
   description = "AI Foundry name (null when disabled)."
 }
+
+output "effective_tags" {
+  value       = local.tags
+  description = "Unified tags applied to all resources/modules."
+}
