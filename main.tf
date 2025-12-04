@@ -19,7 +19,7 @@ locals {
 # --------------------------
 module "resource-group" {
   //source   = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-resources-resourcegroup-main?ref=main"
-  source   = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-resources-resourcegroup-main?ref=main"
+  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-resources-resourcegroup-main?ref=main"
 
   name     = module.naming.standard["resource-group"]
   location = local.env.location
@@ -27,7 +27,7 @@ module "resource-group" {
 
 module "key-vault" {
   //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
-  source   = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
+  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
   count  = local.env.resources.key_vault.enabled ? 1 : 0
 
   name                = module.naming.standard["key-vault"]
@@ -38,7 +38,7 @@ module "key-vault" {
 
 module "storage-account" {
   //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
-  source   = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
+  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
   count  = local.env.resources.storage_account.enabled ? 1 : 0
 
   name                            = module.naming.standard["storage-account"]
@@ -122,7 +122,7 @@ module "aks" {
   location            = local.env.location
 
   default_node_pool = local.env.aks.default_node_pool
-  dns_prefix = "${module.naming.standard["aks"]}-dns"
+  dns_prefix        = "${module.naming.standard["aks"]}-dns"
 }
 
 # --------------------------
@@ -145,7 +145,7 @@ module "mysql" {
   //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-dbformysql-flexibleserver-main?ref=main"
   source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-dbformysql-flexibleserver-main?ref=main"
 
-  count  = local.env.resources.mysql.enabled ? 1 : 0
+  count = local.env.resources.mysql.enabled ? 1 : 0
 
   name                = module.naming.standard["mysql"]
   resource_group_name = module.resource-group.name
@@ -172,7 +172,7 @@ module "search" {
   //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-search-searchservice-main?ref=main"
   source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-search-searchservice-main?ref=main"
 
-  count  = local.env.resources.search.enabled ? 1 : 0
+  count = local.env.resources.search.enabled ? 1 : 0
 
   name                = module.naming.standard["search"]
   resource_group_name = module.resource-group.name
