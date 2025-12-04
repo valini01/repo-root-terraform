@@ -5,28 +5,18 @@ variable "environment_name" {
 
 variable "tags" {
   type        = map(string)
-  description = "Unified tags map to apply to all resources. Required keys: costCenter, owner, dataClassification, managedBy, appId, service. environment and version are auto-populated."
+  description = "Unified tags map to apply to all resources. If omitted, defaults are sourced from environment config; environment and version are auto-populated."
+  default     = {}
   validation {
     condition = alltrue([
-      contains(keys(var.tags), "costCenter"),
-      contains(keys(var.tags), "owner"),
-      contains(keys(var.tags), "dataClassification"),
-      contains(keys(var.tags), "managedBy"),
-      contains(keys(var.tags), "appId"),
-      contains(keys(var.tags), "service"),
+      !can(var.tags["costCenter"]) || length(trimspace(var.tags["costCenter"])) > 0,
+      !can(var.tags["owner"]) || length(trimspace(var.tags["owner"])) > 0,
+      !can(var.tags["dataClassification"]) || contains(["Public", "Internal", "Confidential", "Restricted"], var.tags["dataClassification"]),
+      !can(var.tags["managedBy"]) || length(trimspace(var.tags["managedBy"])) > 0,
+      !can(var.tags["appId"]) || length(trimspace(var.tags["appId"])) > 0,
+      !can(var.tags["service"]) || length(trimspace(var.tags["service"])) > 0,
     ])
-    error_message = "tags must include keys: costCenter, owner, dataClassification, managedBy, appId, service."
-  }
-  validation {
-    condition = alltrue([
-      length(trimspace(var.tags["costCenter"])) > 0,
-      length(trimspace(var.tags["owner"])) > 0,
-      contains(["Public", "Internal", "Confidential", "Restricted"], var.tags["dataClassification"]),
-      length(trimspace(var.tags["managedBy"])) > 0,
-      length(trimspace(var.tags["appId"])) > 0,
-      length(trimspace(var.tags["service"])) > 0,
-    ])
-    error_message = "Tag values must be non-empty. dataClassification must be one of: Public, Internal, Confidential, Restricted."
+    error_message = "Provided tag values must be non-empty. If dataClassification is provided, it must be one of: Public, Internal, Confidential, Restricted."
   }
 }
 
