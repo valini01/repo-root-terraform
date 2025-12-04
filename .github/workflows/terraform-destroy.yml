@@ -17,6 +17,15 @@ on:
         required: true
       GH_PAT:
         required: true
+    vars:
+      ORG:
+        required: true
+      REGION:
+        required: true
+      SVC:
+        required: true
+      INSTANCE:
+        required: true
 
 jobs:
   destroy:
@@ -49,7 +58,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: '>= 1.5, < 2.0.0'
+          terraform_version: 1.12.9
 
       - name: Azure Login (OIDC)
         uses: azure/login@v1
@@ -74,7 +83,7 @@ jobs:
             -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
-            -backend-config="key=${{ env.ORG }}-${{ inputs.environment }}-${{ env.REGION }}-${{ env.SVC }}-${{ env.INSTANCE }}.tfstate" \
+            -backend-config="key=${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}.tfstate" \
             -backend-config="use_azuread_auth=true"
 
       - name: Terraform Plan (Destroy)
