@@ -28,8 +28,7 @@ locals {
 # Resource Group
 # --------------------------
 module "resource-group" {
-  //source   = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-resources-resourcegroup-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-resources-resourcegroup-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-resources-resourcegroup-main?ref=main"
 
   name     = module.naming.standard["resource-group"]
   location = local.env.location
@@ -37,8 +36,7 @@ module "resource-group" {
 }
 
 module "key-vault" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-keyvault-vault-main?ref=main"
   count  = local.env.resources.key_vault.enabled ? 1 : 0
 
   name                = module.naming.standard["key-vault"]
@@ -49,8 +47,7 @@ module "key-vault" {
 }
 
 module "storage-account" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-storage-storageaccount-main?ref=main"
   count  = local.env.resources.storage_account.enabled ? 1 : 0
 
   name                            = module.naming.standard["storage-account"]
@@ -62,8 +59,7 @@ module "storage-account" {
 }
 
 module "naming" {
-  //source = "git::https://github.com/valini01/repo-modules-env.git//modules/azure-naming-standard-tfmodule?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/azure-naming-standard-tfmodule?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//common_modules/azure-naming-standard-tfmodule?ref=main"
 
   # Required inputs from YAML
   location       = local.env.location
@@ -96,8 +92,7 @@ module "naming" {
 # API Management (conditional)
 # --------------------------
 module "api-management" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-apimanagement-service-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-apimanagement-service-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-apimanagement-service-main?ref=main"
   count  = local.env.resources.api_management.enabled ? 1 : 0
 
   name                = module.naming.standard["api-management"]
@@ -112,8 +107,7 @@ module "api-management" {
 # Container Apps (conditional)
 # --------------------------
 module "containerapp" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-app-containerapp-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-app-containerapp-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-app-containerapp-main?ref=main"
   count  = local.env.resources.containerapp.enabled ? 1 : 0
 
   name                                  = module.naming.standard["container-app"]
@@ -128,8 +122,7 @@ module "containerapp" {
 # AKS (conditional)
 # --------------------------
 module "aks" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-containerservice-managedcluster-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-containerservice-managedcluster-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-containerservice-managedcluster-main?ref=main"
   count  = local.env.resources.aks.enabled ? 1 : 0
 
   name                = module.naming.standard["aks"]
@@ -145,8 +138,7 @@ module "aks" {
 # PostgreSQL Flexible Server (conditional)
 # --------------------------
 module "postgresql" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-dbforpostgresql-flexibleserver-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-dbforpostgresql-flexibleserver-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-dbforpostgresql-flexibleserver-main?ref=main"
   count  = local.env.resources.postgresql.enabled ? 1 : 0
 
   name                = module.naming.standard["postgresql"]
@@ -159,8 +151,7 @@ module "postgresql" {
 # MySQL Flexible Server (conditional)
 # --------------------------
 module "mysql" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-dbformysql-flexibleserver-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-dbformysql-flexibleserver-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-dbformysql-flexibleserver-main?ref=main"
 
   count = local.env.resources.mysql.enabled ? 1 : 0
 
@@ -174,8 +165,7 @@ module "mysql" {
 # Cosmos DB (conditional)
 # --------------------------
 module "cosmosdb" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-documentdb-databaseaccount-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-documentdb-databaseaccount-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-documentdb-databaseaccount-main?ref=main"
   count  = local.env.resources.cosmosdb.enabled ? 1 : 0
 
   name                = module.naming.standard["cosmosdb"]
@@ -188,8 +178,7 @@ module "cosmosdb" {
 # Azure Cognitive Search (conditional)
 # --------------------------
 module "search" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-search-searchservice-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-search-searchservice-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-search-searchservice-main?ref=main"
 
   count = local.env.resources.search.enabled ? 1 : 0
 
@@ -203,8 +192,7 @@ module "search" {
 # SQL Server (conditional)
 # --------------------------
 module "sql-server" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-sql-server-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-sql-server-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-sql-server-main?ref=main"
   count  = local.env.resources.sql_server.enabled ? 1 : 0
 
   name                = module.naming.standard["sql-server"]
@@ -218,8 +206,7 @@ module "sql-server" {
 # SQL Managed Instance (conditional)
 # --------------------------
 module "sql-managed-instance" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-sql-managedinstance-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-sql-managedinstance-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-sql-managedinstance-main?ref=main"
   count  = local.env.resources.sql_managed_instance.enabled ? 1 : 0
 
   name                = module.naming.standard["sql-managed-instance"]
@@ -240,8 +227,7 @@ module "sql-managed-instance" {
 # ML Workspace (conditional)
 # --------------------------
 module "ml-workspace" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-machinelearningservices-workspace-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-res-machinelearningservices-workspace-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-res-machinelearningservices-workspace-main?ref=main"
   count  = local.env.resources.ml_workspace.enabled ? 1 : 0
 
   name                = module.naming.standard["ml-workspace"]
@@ -254,8 +240,7 @@ module "ml-workspace" {
 # AI Foundry (conditional)
 # --------------------------
 module "ai-foundry" {
-  //source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-ptn-aiml-ai-foundry-main?ref=main"
-  source = "git::https://github.com/valini01/repo-modules-env.git//modules/terraform-azurerm-avm-ptn-aiml-ai-foundry-main?ref=main"
+  source = "git::https://github.vodafone.com/vfgroup-aibooster/aibooster-azure-vendor-modules.git//avm_modules/terraform-azurerm-avm-ptn-aiml-ai-foundry-main?ref=main"
   count  = local.env.resources.ai_foundry.enabled ? 1 : 0
 
   base_name                  = module.naming.standard["ai-foundry"]

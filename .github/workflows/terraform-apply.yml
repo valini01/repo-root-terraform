@@ -73,12 +73,12 @@ jobs:
           BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           BRANCH_NAME="${BRANCH//\//-}"
-          echo "🗂 Using statefile: ${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}-${BRANCH_NAME}.tfstate"
+          echo "🗂 Using statefile: ${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}.tfstate"
           terraform init \
             -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
-            -backend-config="key=${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}-${BRANCH_NAME}.tfstate" \
+            -backend-config="key=${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}.tfstate" \
             -backend-config="use_azuread_auth=true"
 
       # - name: Terraform Plan
