@@ -69,8 +69,11 @@ jobs:
 
       # 🟩 UPDATED Terraform Init with backend config
       - name: Initialize Terraform Backend
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
-          echo "Initializing Terraform backend..."
+          BRANCH_NAME="${BRANCH//\//-}"
+          echo "🗂 Using statefile: ${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}.tfstate"
           terraform init \
             -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
