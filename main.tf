@@ -20,7 +20,6 @@ locals {
       environment = var.environment_name
       version     = local.version
       appId       = try(local.env.application_id, try(local.env.tags.appId, null))
-      service     = try(local.env.context, try(local.env.tags.service, null))
     }
   )
 }
