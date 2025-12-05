@@ -69,13 +69,16 @@ jobs:
 
       # 🟩 UPDATED Terraform Init with backend config
       - name: Initialize Terraform Backend
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
-          echo "🔄 Reconfiguring Terraform backend with naming convention..."
-          terraform init -reconfigure \
+          BRANCH_NAME="${BRANCH//\//-}"
+          echo "🗂 Using statefile: ${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}-${BRANCH_NAME}.tfstate"
+          terraform init \
             -backend-config="resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }}" \
             -backend-config="storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ vars.STATE_CONTAINER_NAME }}" \
-            -backend-config="key=${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}.tfstate" \
+            -backend-config="key=${{ vars.ORG }}-${{ inputs.environment }}-${{ vars.REGION }}-${{ vars.SVC }}-${{ vars.INSTANCE }}-${BRANCH_NAME}.tfstate" \
             -backend-config="use_azuread_auth=true"
 
       - name: Terraform Plan
